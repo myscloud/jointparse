@@ -62,7 +62,7 @@ def train(options):
     eval_batch_count = ceil(len(eval_data.phrases) / options['pos_batch_size'])
 
     epoch_count = 0
-    latest_accuracy = 0
+    max_accuracy = 0
     model = TaggerModel(lang_params.params['subword_embedding'])
     while True:
         print('epoch ', epoch_count)
@@ -95,15 +95,14 @@ def train(options):
         print('eval loss', eval_loss)
         print('eval accuracy', eval_accuracy)
 
-        if epoch_count == 2:
-        # if eval_accuracy < latest_accuracy:
+        if (eval_accuracy + 1.0) < max_accuracy:
             train_data.write_tagged_results(options['pos_results_path'] + 'train.pos')
             eval_data.write_tagged_results(options['pos_results_path'] + 'eval.pos')
             dev_data.write_tagged_results(options['pos_results_path'] + 'dev.pos')
             test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
             break
 
-        latest_accuracy = eval_accuracy
+        max_accuracy = max(eval_accuracy, max_accuracy)
         model.save_model(options['pos_model_save_path'], epoch_count)
         epoch_count += 1
 

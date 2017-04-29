@@ -30,6 +30,8 @@ class Parser:
         self.max_stack_index = 0
         self.current_config = self.read_initial_settings(input_sentence)
 
+        self.arcs = list()
+
     def get_features(self, feature_pattern):
         features = dict()
         node_dict = self.get_node_dict(feature_pattern.node_list, feature_pattern.relative_node_list)
@@ -70,11 +72,19 @@ class Parser:
 
         return node_dict
 
-    def add_new_arc(self, head_node_id, dependent_node_id, dep_label, arc_type):
+    def add_new_arc(self, head_node_id, dep_label,  dependent_node_id, arc_type):
         if arc_type == 'left':
             child1, child2, child_of_child = 'l1', 'l2', 'll1'
         else:
             child1, child2, child_of_child = 'r1', 'r2', 'rr1'
+
+        self.features[head_node_id][child2] = self.features[head_node_id][child1]
+        self.features[head_node_id][child1] = dependent_node_id
+        if self.features[dependent_node_id][child1]:  # child of child
+            self.features[head_node_id][child_of_child] = self.features[dependent_node_id][child1]
+
+        self.features[dependent_node_id]['l'] = self.network_params.params['dep_label_map'][dep_label]
+        self.arcs.append((head_node_id, dep_label, dependent_node_id))
 
     def get_new_buffer_node_features(self, subword, candidate_words, candidate_bpos):
         new_features = dict()

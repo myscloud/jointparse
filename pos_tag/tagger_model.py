@@ -10,7 +10,7 @@ vocabulary_size = 100004
 # network parameters
 n_steps = 30
 n_input = 64
-n_hidden = 128
+n_hidden = 100
 n_classes = 60
 
 graph = tf.Graph()
@@ -21,7 +21,7 @@ with graph.as_default():
     embedding = tf.placeholder("float", [vocabulary_size, n_input])
 
     with tf.device('/cpu:0'):
-        out_weights = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]))
+        out_weights = tf.Variable(tf.random_normal([4 * n_hidden, n_classes]))
         out_biases = tf.Variable(tf.random_normal([n_classes]))
 
         x_input = tf.nn.embedding_lookup(embedding, x)
@@ -38,9 +38,15 @@ with graph.as_default():
         lstm_bw_cell = rnn.BasicLSTMCell(n_hidden)
 
         outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x_input,
-                                                     dtype=tf.float32, sequence_length=sentence_len)
+                                                     dtype=tf.float32, sequence_length=sentence_len, scope='bilstm1')
 
-        predicted = [tf.matmul(outputs[idx], out_weights) + out_biases for idx in range(n_steps)]
+        lstm2_fw_cell = rnn.BasicLSTMCell(n_hidden * 2)
+        lstm2_bw_cell = rnn.BasicLSTMCell(n_hidden * 2)
+
+        outputs2, _, _ = rnn.static_bidirectional_rnn(lstm2_fw_cell, lstm2_bw_cell, outputs,
+                                                      dtype=tf.float32, sequence_length=sentence_len, scope='bilstm2')
+
+        predicted = [tf.matmul(outputs2[idx], out_weights) + out_biases for idx in range(n_steps)]
 
         final_output = tf.transpose(predicted, perm=[1, 0, 2])
 

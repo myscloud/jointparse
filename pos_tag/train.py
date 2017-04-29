@@ -1,4 +1,5 @@
 from math import ceil
+from collections import deque
 
 from blaze.compute.numpy import epoch
 
@@ -62,7 +63,7 @@ def train(options):
     eval_batch_count = ceil(len(eval_data.phrases) / options['pos_batch_size'])
 
     epoch_count = 0
-    max_accuracy = 0
+    latest_accuracies = deque(maxlen=10)
     model = TaggerModel(lang_params.params['subword_embedding'])
     while True:
         print('epoch ', epoch_count)
@@ -89,20 +90,21 @@ def train(options):
             tag_count_sum += tag_count
 
         eval_accuracy = (correct_count_sum / tag_count_sum) * 100
+        latest_accuracies.append(eval_accuracy)
         eval_loss = loss_sum / eval_batch_count
 
         print('train loss', train_loss)
         print('eval loss', eval_loss)
         print('eval accuracy', eval_accuracy)
 
-        if (eval_accuracy + 1.0) < max_accuracy:
+        average_accuracy = sum(latest_accuracies) / len(latest_accuracies)
+        if eval_accuracy < average_accuracy:
             train_data.write_tagged_results(options['pos_results_path'] + 'train.pos')
             eval_data.write_tagged_results(options['pos_results_path'] + 'eval.pos')
             dev_data.write_tagged_results(options['pos_results_path'] + 'dev.pos')
             test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
             break
 
-        max_accuracy = max(eval_accuracy, max_accuracy)
         model.save_model(options['pos_model_save_path'], epoch_count)
         epoch_count += 1
 

@@ -10,7 +10,8 @@ embedding_dim = 64
 n_hidden = 100
 
 batch_size = 128
-learning_rate = 0.5
+learning_rate = 0.1
+dropout_prob = 0.5
 
 with tf.device("/cpu:0"):
     x = dict()
@@ -44,15 +45,19 @@ with tf.device("/cpu:0"):
     output_bias = tf.Variable(tf.zeros([n_output_class]))
     outputs = tf.matmul(hidden_output, output_weight) + output_bias
 
+    # for output
     min_value = tf.minimum(tf.reduce_min(outputs), 0.)
     positive_outputs = tf.add(outputs, (-1 * min_value))
     output_mask = tf.placeholder(tf.float32, [batch_size, n_output_class])
     final_outputs = tf.multiply(positive_outputs, output_mask)
 
+    # optimize
+    p_dropout = tf.placeholder(tf.float32)
+    dropped_outputs = tf.nn.dropout(outputs, p_dropout)
     y = tf.placeholder(tf.int32, [batch_size, 1])
     y_vec = tf.one_hot(y, n_output_class, on_value=1.0, off_value=0.0, axis=-1)
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_vec, logits=outputs))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_vec, logits=dropped_outputs))
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
 
     init = tf.global_variables_initializer()
@@ -69,7 +74,7 @@ class ParserModel:
             self.session.run(init)
 
     def train(self, input_dict, labels, action_mask):
-        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels)
+        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels, keep_dropout=True)
         _, batch_loss = self.session.run([optimizer, loss], feed_dict=feed_dict)
 
         return batch_loss
@@ -85,13 +90,14 @@ class ParserModel:
         results = self.session.run(final_outputs, feed_dict=feed_dict)
         return results
 
-    def get_feed_dict(self, input_dict, action_mask, labels=None):
+    def get_feed_dict(self, input_dict, action_mask, labels=None, keep_dropout=False):
         feed_dict = dict()
         for feature in feature_categories:
             feed_dict[x[feature]] = input_dict[feature]
         feed_dict[output_mask] = action_mask
         feed_dict[embedding['word']] = self.embedding['word']
         feed_dict[embedding['subword']] = self.embedding['subword']
+        feed_dict[p_dropout] = dropout_prob if keep_dropout else 0.0
 
         if labels is not None:
             feed_dict[y] = labels

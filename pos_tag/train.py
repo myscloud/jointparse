@@ -74,43 +74,44 @@ def train(options):
             batch_loss = model.train(x, y, sent_len)
             loss_sum += batch_loss
         train_loss = loss_sum / train_batch_count
+        break
 
-        loss_sum = 0
-        correct_count_sum = tag_count_sum = 0
-        eval_data_feeder.shuffle()
-        results = list()
-        while not eval_data_feeder.is_epoch_end():
-            x, y, sent_len, token_map = eval_data_feeder.get_next_batch()
-            predicted_y, batch_loss = model.evaluate(x, y, sent_len)
-            results.append(predicted_y)
-            loss_sum += batch_loss
-
-            _, correct_count, tag_count = evaluate_accuracy(y, predicted_y, token_map)
-            correct_count_sum += correct_count
-            tag_count_sum += tag_count
-
-        eval_accuracy = (correct_count_sum / tag_count_sum) * 100
-        latest_accuracies.append(eval_accuracy)
-        eval_loss = loss_sum / eval_batch_count
-
-        print('train loss', train_loss)
-        print('eval loss', eval_loss)
-        print('eval accuracy', eval_accuracy)
-
-        average_accuracy = sum(latest_accuracies) / len(latest_accuracies)
-        if eval_accuracy < average_accuracy:
-            train_data.write_tagged_results(options['pos_results_path'] + 'train.pos')
-            eval_data.write_tagged_results(options['pos_results_path'] + 'eval.pos')
-            dev_data.write_tagged_results(options['pos_results_path'] + 'dev.pos')
-            test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
-            break
-
-        model.save_model(options['pos_model_save_path'], epoch_count)
-        epoch_count += 1
-
-        # get prediction results
-        max_k = options['no_pos_candidates']
-        predict(model, lang_params, train_data, eval_train_data_feeder, 'train', max_k)
-        predict(model, lang_params, eval_data, eval_data_feeder, 'eval', max_k)
-        predict(model, lang_params, dev_data, dev_data_feeder, 'dev', max_k)
-        predict(model, lang_params, test_data, test_data_feeder, 'test', max_k)
+        # loss_sum = 0
+        # correct_count_sum = tag_count_sum = 0
+        # eval_data_feeder.shuffle()
+        # results = list()
+        # while not eval_data_feeder.is_epoch_end():
+        #     x, y, sent_len, token_map = eval_data_feeder.get_next_batch()
+        #     predicted_y, batch_loss = model.evaluate(x, y, sent_len)
+        #     results.append(predicted_y)
+        #     loss_sum += batch_loss
+        #
+        #     _, correct_count, tag_count = evaluate_accuracy(y, predicted_y, token_map)
+        #     correct_count_sum += correct_count
+        #     tag_count_sum += tag_count
+        #
+        # eval_accuracy = (correct_count_sum / tag_count_sum) * 100
+        # latest_accuracies.append(eval_accuracy)
+        # eval_loss = loss_sum / eval_batch_count
+        #
+        # print('train loss', train_loss)
+        # print('eval loss', eval_loss)
+        # print('eval accuracy', eval_accuracy)
+        #
+        # average_accuracy = sum(latest_accuracies) / len(latest_accuracies)
+        # if eval_accuracy < average_accuracy:
+        #     train_data.write_tagged_results(options['pos_results_path'] + 'train.pos')
+        #     eval_data.write_tagged_results(options['pos_results_path'] + 'eval.pos')
+        #     dev_data.write_tagged_results(options['pos_results_path'] + 'dev.pos')
+        #     test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
+        #     break
+        #
+        # model.save_model(options['pos_model_save_path'], epoch_count)
+        # epoch_count += 1
+        #
+        # # get prediction results
+        # max_k = options['no_pos_candidates']
+        # predict(model, lang_params, train_data, eval_train_data_feeder, 'train', max_k)
+        # predict(model, lang_params, eval_data, eval_data_feeder, 'eval', max_k)
+        # predict(model, lang_params, dev_data, dev_data_feeder, 'dev', max_k)
+        # predict(model, lang_params, test_data, test_data_feeder, 'test', max_k)

@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-ParserInput = namedtuple('ParserInput', ['subword', 'word_candidates', 'pos_candidates'])
+ParserInput = namedtuple('ParserInput', ['subword_idx', 'subword', 'word_candidates', 'pos_candidates'])
 
 
 class InconsistentInputFile(Exception):
@@ -29,8 +29,9 @@ class ParserInputData:
                     sentence_count += 1
                 elif line[0] != '#':
                     token = line.strip().split()
+                    subword_idx = int(token[0])
                     subword = token[1]
-                    sentence_data.append(ParserInput(subword, [], []))
+                    sentence_data.append(ParserInput(subword_idx, subword, [], []))
 
         if len(sentence_data) > 0:
             subword_data.append(sentence_data)

@@ -13,6 +13,7 @@ from parse.parser_model import ParserModel
 from parse.predict import predict
 from parse.evaluate import get_parser_evaluation, get_epoch_evaluation
 
+
 def prepare_input(options):
     training_parser_input = ParserInputData(options['train_subword_file_path'], options['train_word_seg_path'],
                                          options['train_pos_candidates_path'])
@@ -83,8 +84,10 @@ def train(options):
     batch_size = options['parsing_batch_size']
     training_input_feeder = BatchReader(training_input_list, batch_size)
     epoch_count = 0
-    last_f1 = deque(maxlen=10)
-    last_uas = deque(maxlen=10)
+    last_f1 = deque(maxlen=20)
+    last_uas = deque(maxlen=20)
+    max_f1 = 0
+    max_uas = 0
 
     while True:
         print('epoch', epoch_count)
@@ -136,11 +139,14 @@ def train(options):
         uas_score = epoch_eval['uas_accuracy']
         last_f1.append(f1_score)
         last_uas.append(uas_score)
+        max_f1 = max(f1_score, max_f1)
+        max_uas = max(uas_score, max_uas)
+
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)
         print(f1_score, uas_score)
 
-        if f1_score > average_f1 or uas_score > average_uas or epoch_count < 10:
+        if max_f1 > average_f1 or max_uas > average_uas or epoch_count < 20:
             pass
         else:
             model.save_model(options['parser_model_save_path'], epoch_count)

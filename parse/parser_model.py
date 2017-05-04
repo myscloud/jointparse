@@ -10,7 +10,7 @@ embedding_dim = 64
 n_hidden = 100
 
 batch_size = 128
-learning_rate = 0.5
+learning_rate = 0.3
 dropout_prob = 0.5
 
 with tf.device("/cpu:0"):

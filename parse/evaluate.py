@@ -10,11 +10,11 @@ def get_parser_evaluation(predicted_list, gold_list):
     evaluation['gold_list_len'] = len(gold_list)
     evaluation['correct_count'] = correct_count
     evaluation['pos_match'] = pos_correct_count
-    evaluation['pos_acc'] = (pos_correct_count / correct_count) * 100
+    evaluation['pos_acc'] = (pos_correct_count / correct_count) * 100 if correct_count > 0 else 0
     evaluation['uas_match'] = uas_score
-    evaluation['uas_score'] = (uas_score / correct_count) * 100
+    evaluation['uas_score'] = (uas_score / correct_count) * 100 if correct_count > 0 else 0
     evaluation['las_match'] = las_score
-    evaluation['las_score'] = (las_score / correct_count) * 100
+    evaluation['las_score'] = (las_score / correct_count) * 100 if correct_count > 0 else 0
 
     return evaluation
 

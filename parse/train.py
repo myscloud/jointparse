@@ -86,6 +86,7 @@ def train(options):
     epoch_count = 0
     last_f1 = deque(maxlen=20)
     last_uas = deque(maxlen=20)
+    last_batch_loss = deque(maxlen=20)
     max_f1 = 0
     max_uas = 0
 
@@ -108,7 +109,9 @@ def train(options):
             training_loss_sum += loss
             iteration_count += 1
 
-        print(training_loss_sum / iteration_count)
+        training_batch_loss = training_loss_sum / iteration_count
+        last_batch_loss.append(training_batch_loss)
+        print(training_batch_loss)
 
         # evaluate
         parsers = list()
@@ -144,9 +147,11 @@ def train(options):
 
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)
+        average_batch_loss = sum(last_batch_loss) / len(last_batch_loss)
         print(f1_score, uas_score)
 
-        if max_f1 > average_f1 or max_uas > average_uas or epoch_count < 20:
+        if training_batch_loss < average_batch_loss or f1_score > average_f1 \
+                or uas_score > average_uas or epoch_count < 20:
             pass
         else:
             model.save_model(options['parser_model_save_path'], epoch_count)

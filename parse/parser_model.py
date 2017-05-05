@@ -10,8 +10,9 @@ embedding_dim = 64
 n_hidden = 100
 
 batch_size = 128
-learning_rate = 0.1
+learning_rate = 0.01
 dropout_prob = 0.5
+regularize_param = 10e-8
 
 with tf.device("/cpu:0"):
     x = dict()
@@ -26,6 +27,7 @@ with tf.device("/cpu:0"):
         'bpos': tf.Variable(tf.random_uniform([n_class['bpos'], embedding_dim], minval=-0.01, maxval=-0.01))
     }
 
+    # hidden layer
     hidden_sum = tf.Variable(tf.zeros([n_hidden]))
     hidden_bias = tf.Variable(tf.zeros([n_hidden]))
     x_input = dict()
@@ -41,25 +43,39 @@ with tf.device("/cpu:0"):
 
     hidden_output = tf.tanh(tf.add(hidden_sum, hidden_bias))
 
+    # output layer
     output_weight = tf.Variable(tf.truncated_normal([n_hidden, n_output_class], stddev=1.0/sqrt(n_output_class)))
     output_bias = tf.Variable(tf.zeros([n_output_class]))
     outputs = tf.matmul(hidden_output, output_weight) + output_bias
 
-    # for output
+    # for predicted output
     min_value = tf.minimum(tf.reduce_min(outputs), 0.)
     positive_outputs = tf.add(outputs, (-1 * min_value))
     output_mask = tf.placeholder(tf.float32, [batch_size, n_output_class])
     final_outputs = tf.multiply(positive_outputs, output_mask)
 
-    # optimize
+    # apply dropout
     p_dropout = tf.placeholder(tf.float32)
-    dropped_outputs = tf.nn.dropout(outputs, p_dropout)
+    dropped_outputs = tf.nn.dropout(final_outputs, p_dropout)
+
+    # cross entropy loss
     y = tf.placeholder(tf.int32, [batch_size, 1])
     y_vec = tf.one_hot(y, n_output_class, on_value=1.0, off_value=0.0, axis=-1)
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_vec, logits=dropped_outputs))
 
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_vec, logits=dropped_outputs))
+    # l2 regularization
+    l2_sum = 0.0
+    for keyword in x:
+        l2_sum += tf.nn.l2_loss(hidden_weights[keyword])
+    l2_sum += tf.nn.l2_loss(embedding['pos']) + tf.nn.l2_loss(embedding['label']) + tf.nn.l2_loss(embedding['bpos'])
+    l2_sum += tf.nn.l2_loss(output_weight)
+    l2_value = regularize_param * l2_sum
+
+    # optimize
+    loss = cross_entropy_loss + l2_value
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
 
+    # misc
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 

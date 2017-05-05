@@ -37,7 +37,7 @@ def evaluate_from_file(options):
                 _, _, predicted_pos, real_tag = line.strip().split('\t')
                 all_predicted = predicted_pos.split(',')
                 for i in range(len(all_predicted)):
-                    if is_pos_equal(all_predicted[i], real_tag):
+                    if all_predicted[i] == real_tag:
                         correct_count[i] += 1
                 tag_count += 1
 

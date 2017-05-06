@@ -130,4 +130,7 @@ def get_uas_las_match(predicted_list, gold_list, predict_gold_map):
 
 
 def get_f1_score(precision, recall):
-    return (2 * (precision * recall)) / (precision + recall)
+    if precision + recall > 0:
+        return (2 * (precision * recall)) / (precision + recall)
+    else:
+        return 0

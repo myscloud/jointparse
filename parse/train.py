@@ -84,9 +84,9 @@ def train(options):
     batch_size = options['parsing_batch_size']
     training_input_feeder = BatchReader(training_input_list, batch_size)
     epoch_count = 0
-    last_f1 = deque(maxlen=20)
-    last_uas = deque(maxlen=20)
-    last_batch_loss = deque(maxlen=20)
+    last_f1 = deque()
+    last_uas = deque()
+    last_batch_loss = deque()
     max_f1 = 0
     max_uas = 0
 

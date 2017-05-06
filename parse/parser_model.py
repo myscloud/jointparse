@@ -3,14 +3,14 @@ from math import sqrt
 
 # parameters
 feature_categories = ['word', 'subword', 'pos', 'label', 'bpos']
-n_features = {'word': 21, 'subword': 3, 'pos': 15, 'label': 12, 'bpos': 6}
+n_features = {'word': 24, 'subword': 3, 'pos': 15, 'label': 12, 'bpos': 9}
 n_class = {'word': 100004, 'subword': 100004, 'pos': 16, 'label': 39, 'bpos': 61}
 n_output_class = 106
 embedding_dim = 64
-n_hidden = 100
+n_hidden = 200
 
 batch_size = 128
-learning_rate = 0.01
+learning_rate = 0.1
 dropout_prob = 0.5
 regularize_param = 10e-8
 
@@ -41,12 +41,14 @@ with tf.device("/cpu:0"):
                                                                   stddev=1.0/sqrt(n_hidden)))
         hidden_sum = hidden_sum + tf.matmul(flatten_x[keyword], hidden_weights[keyword])
 
-    hidden_output = tf.tanh(tf.add(hidden_sum, hidden_bias))
+    hidden_output = tf.pow(tf.add(hidden_sum, hidden_bias), 3)
 
     # output layer
+    is_training = tf.placeholder(tf.bool)
+    normalized_tensor = tf.contrib.layers.batch_norm(hidden_output, center=True, scale=True, is_training=is_training)
+    normalized_outputs = tf.nn.relu(normalized_tensor)
     output_weight = tf.Variable(tf.truncated_normal([n_hidden, n_output_class], stddev=1.0/sqrt(n_output_class)))
-    output_bias = tf.Variable(tf.zeros([n_output_class]))
-    outputs = tf.matmul(hidden_output, output_weight) + output_bias
+    outputs = tf.matmul(normalized_outputs, output_weight)
 
     # for predicted output
     min_value = tf.minimum(tf.reduce_min(outputs), 0.)
@@ -68,6 +70,7 @@ with tf.device("/cpu:0"):
     for keyword in x:
         l2_sum += tf.nn.l2_loss(hidden_weights[keyword])
     l2_sum += tf.nn.l2_loss(embedding['pos']) + tf.nn.l2_loss(embedding['label']) + tf.nn.l2_loss(embedding['bpos'])
+    l2_sum += tf.nn.l2_loss(hidden_bias)
     l2_sum += tf.nn.l2_loss(output_weight)
     l2_value = regularize_param * l2_sum
 
@@ -90,7 +93,7 @@ class ParserModel:
             self.session.run(init)
 
     def train(self, input_dict, labels, action_mask):
-        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels, keep_dropout=True)
+        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels, keep_dropout=True, training=True)
         _, batch_loss = self.session.run([optimizer, loss], feed_dict=feed_dict)
 
         return batch_loss
@@ -106,7 +109,7 @@ class ParserModel:
         results = self.session.run(final_outputs, feed_dict=feed_dict)
         return results
 
-    def get_feed_dict(self, input_dict, action_mask, labels=None, keep_dropout=False):
+    def get_feed_dict(self, input_dict, action_mask, labels=None, keep_dropout=False, training=False):
         feed_dict = dict()
         for feature in feature_categories:
             feed_dict[x[feature]] = input_dict[feature]
@@ -114,6 +117,7 @@ class ParserModel:
         feed_dict[embedding['word']] = self.embedding['word']
         feed_dict[embedding['subword']] = self.embedding['subword']
         feed_dict[p_dropout] = dropout_prob if keep_dropout else 0.0
+        feed_dict[is_training] = training
 
         if labels is not None:
             feed_dict[y] = labels

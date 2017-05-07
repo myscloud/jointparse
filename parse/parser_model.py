@@ -7,9 +7,9 @@ n_features = {'word': 24, 'subword': 3, 'pos': 15, 'label': 12, 'bpos': 9}
 n_class = {'word': 100004, 'subword': 100004, 'pos': 16, 'label': 39, 'bpos': 61}
 n_output_class = 106
 embedding_dim = 64
-n_hidden = 200
+n_hidden = 150
 
-batch_size = 128
+batch_size = 64
 learning_rate = 0.1
 dropout_prob = 0.5
 regularize_param = 10e-8
@@ -45,7 +45,7 @@ with tf.device("/cpu:0"):
 
     phase = tf.placeholder(tf.bool)
     normalized_tensor = tf.contrib.layers.batch_norm(hidden_output, center=True, scale=True, is_training=phase)
-    normalized_outputs = tf.nn.relu(normalized_tensor)
+    normalized_outputs = tf.nn.tanh(normalized_tensor)
 
     # output layer
     output_weight = tf.Variable(tf.truncated_normal([n_hidden, n_output_class], stddev=1.0/sqrt(n_output_class)))

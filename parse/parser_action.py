@@ -99,7 +99,7 @@ def get_feasible_actions_with_list(parser, action_list):
         elif action == 'APPEND':
             feasible = (len(config.buffer) > 0) and (last_action == 'SHIFT' or last_action == 'APPEND')
 
-        feasibility += [int(feasible)] * (end_index - start_index)
+        feasibility += [float(feasible)] * (end_index - start_index)
         if feasible:
             feasible_actions.append(action)
 

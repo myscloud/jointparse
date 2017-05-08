@@ -114,28 +114,22 @@ def train(options):
         print(training_batch_loss)
 
         # evaluate
-        parsers = list()
         evaluation_list = list()
+        parser_count = 0
 
         for sentence, data_label, subword_label in zip(
                 eval_parser_input.data, eval_parser_label.data, eval_parser_label.subword):
             parser = Parser(sentence, network_params, labels=[data_label, subword_label])
-            parsers.append(parser)
+            predicted_parser = predict(parser, model, feature_pattern,
+                                       action_list, network_params.params['reverse_action_map'])
+            evaluation = get_parser_evaluation(predicted_parser.results[1:], data_label)
+            evaluation_list.append(evaluation)
+            parser_count += 1
 
-        parser_list = [{'data': parsers, 'pad_element': [None], 'post_func': None},
-                       {'data': eval_parser_label.data, 'pad_element': [None], 'post_func': None}]
+            if parser_count % 20 == 0:
+                print('.', end='')
 
-        parser_feeder = BatchReader(parser_list, batch_size)
-
-        while not parser_feeder.is_epoch_end():
-            batch_parsers, batch_gold_data = parser_feeder.get_next_batch()
-            predicted_parsers = predict(batch_parsers, model, feature_pattern,
-                                        action_list, network_params.params['reverse_action_map'])
-
-            for predicted_parser, gold_results in zip(predicted_parsers, batch_gold_data):
-                if isinstance(predicted_parser, Parser):
-                    evaluation = get_parser_evaluation(predicted_parser.results[1:], gold_results)
-                    evaluation_list.append(evaluation)
+        print('.')
 
         epoch_eval = get_epoch_evaluation(evaluation_list)
         f1_score = epoch_eval['word_f1_score']

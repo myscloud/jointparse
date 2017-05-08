@@ -14,20 +14,8 @@ learning_rate = 0.1
 dropout_prob = 0.5
 regularize_param = 10e-8
 
-with tf.device("/cpu:0"):
-    x = dict()
-    for feature in feature_categories:
-        x[feature] = tf.placeholder(tf.int32, [batch_size, n_features[feature]])
 
-    embedding = {
-        'word': tf.placeholder(tf.float32, [n_class['word'], embedding_dim]),
-        'subword': tf.placeholder(tf.float32, [n_class['subword'], embedding_dim]),
-        'pos': tf.Variable(tf.random_uniform([n_class['pos'], embedding_dim], minval=-0.1, maxval=0.1)),
-        'label': tf.Variable(tf.random_uniform([n_class['label'], embedding_dim], minval=-0.1, maxval=0.1)),
-        'bpos': tf.Variable(tf.random_uniform([n_class['bpos'], embedding_dim], minval=-0.1, maxval=-0.1))
-    }
-
-    # hidden layer
+def nn_hidden_layer(x, embedding, phase):
     hidden_sum = tf.Variable(tf.zeros([n_hidden]))
     hidden_bias = tf.Variable(tf.zeros([n_hidden]))
     x_input = dict()
@@ -36,50 +24,73 @@ with tf.device("/cpu:0"):
     for keyword in x:
         x_input[keyword] = tf.nn.embedding_lookup(embedding[keyword], x[keyword])
         flatten_dim = n_features[keyword] * embedding_dim
-        flatten_x[keyword] = tf.reshape(x_input[keyword], [batch_size, flatten_dim])
+        tensor_batch_size = tf.shape(x_input[keyword])[0]
+        flatten_x[keyword] = tf.reshape(x_input[keyword], [tensor_batch_size, flatten_dim])
         hidden_weights[keyword] = tf.Variable(tf.truncated_normal([flatten_dim, n_hidden],
-                                                                  stddev=1.0/sqrt(n_hidden)))
+                                                                  stddev=1.0 / sqrt(n_hidden)))
         hidden_sum = hidden_sum + tf.matmul(flatten_x[keyword], hidden_weights[keyword])
 
     hidden_output = tf.add(hidden_sum, hidden_bias)
 
-    phase = tf.placeholder(tf.bool)
     normalized_tensor = tf.contrib.layers.batch_norm(hidden_output, center=True, scale=True, is_training=phase)
     normalized_outputs = tf.nn.tanh(normalized_tensor)
+    return normalized_outputs, hidden_output, hidden_weights, hidden_bias
 
-    # output layer
-    output_weight = tf.Variable(tf.truncated_normal([n_hidden, n_output_class], stddev=1.0/sqrt(n_output_class)))
-    outputs = tf.matmul(normalized_outputs, output_weight)
+
+def nn_output_layer(hidden_output, mask):
+    output_weight = tf.Variable(tf.truncated_normal([n_hidden, n_output_class], stddev=1.0 / sqrt(n_output_class)))
+    outputs = tf.matmul(hidden_output, output_weight)
 
     # for predicted output
     min_value = tf.minimum(tf.reduce_min(outputs), 0.)
     positive_outputs = tf.add(outputs, (-1 * min_value))
-    output_mask = tf.placeholder(tf.float32, [batch_size, n_output_class])
-    final_outputs = tf.multiply(positive_outputs, output_mask)
+    final_outputs = tf.multiply(positive_outputs, mask)
+    return final_outputs, output_weight
 
+
+def nn_calculate_loss(y, outputs, parameters):
     # apply dropout
-    p_dropout = tf.placeholder(tf.float32)
-    dropped_outputs = tf.nn.dropout(final_outputs, p_dropout)
+    dropped_outputs = tf.nn.dropout(outputs, dropout_prob)
 
     # cross entropy loss
-    y = tf.placeholder(tf.int32, [batch_size, 1])
     y_vec = tf.one_hot(y, n_output_class, on_value=1.0, off_value=0.0, axis=-1)
     cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_vec, logits=dropped_outputs))
 
     # l2 regularization
     l2_sum = 0.0
-    for keyword in x:
-        l2_sum += tf.nn.l2_loss(hidden_weights[keyword])
-    l2_sum += tf.nn.l2_loss(embedding['pos']) + tf.nn.l2_loss(embedding['label']) + tf.nn.l2_loss(embedding['bpos'])
-    l2_sum += tf.nn.l2_loss(hidden_bias)
-    l2_sum += tf.nn.l2_loss(output_weight)
+    for param in parameters:
+        l2_sum += tf.nn.l2_loss(param)
     l2_value = regularize_param * l2_sum
 
     # optimize
     loss = cross_entropy_loss + l2_value
-    optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
+    return loss
 
-    # misc
+with tf.device('/cpu:0'):
+    training_phase = tf.placeholder(tf.bool, name='training_phase')
+
+    input_x = dict()
+    for feature in feature_categories:
+        input_x[feature] = tf.placeholder(tf.int32, [None, n_features[feature]], name='input_'+feature)
+
+    input_embedding = {
+        'word': tf.placeholder(tf.float32, [n_class['word'], embedding_dim], name='emb_word'),
+        'subword': tf.placeholder(tf.float32, [n_class['subword'], embedding_dim], name='emb_subword'),
+        'pos': tf.Variable(tf.random_uniform([n_class['pos'], embedding_dim], minval=-0.1, maxval=0.1)),
+        'label': tf.Variable(tf.random_uniform([n_class['label'], embedding_dim], minval=-0.1, maxval=0.1)),
+        'bpos': tf.Variable(tf.random_uniform([n_class['bpos'], embedding_dim], minval=-0.1, maxval=-0.1))
+    }
+
+    y_label = tf.placeholder(tf.int32, [None, 1], name='y')
+    output_mask = tf.placeholder(tf.float32, [None, n_output_class], name='output_mask')
+
+    h, _, h_weights, h_bias = nn_hidden_layer(input_x, input_embedding, training_phase)
+    p, o_weight = nn_output_layer(h, output_mask)
+    params = list(h_weights.values()) + [h_bias, o_weight]
+    network_loss = nn_calculate_loss(y_label, p, params)
+
+    optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(network_loss)
+
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 
@@ -88,40 +99,40 @@ class ParserModel:
     def __init__(self, input_embedding, model_path=None):
         self.embedding = input_embedding
         self.session = tf.Session()
+        self.options = dict()
         if model_path is not None:
             saver.restore(self.session, model_path)
         else:
             self.session.run(init)
 
     def train(self, input_dict, labels, action_mask):
-        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels, keep_dropout=True, training=True)
-        _, batch_loss = self.session.run([optimizer, loss], feed_dict=feed_dict)
+        feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels, training=True)
+        _, batch_loss = self.session.run([optimizer, network_loss], feed_dict=feed_dict)
 
         return batch_loss
 
     def evaluate(self, input_dict, labels, action_mask):
         feed_dict = self.get_feed_dict(input_dict, action_mask, labels=labels)
-        batch_loss, results = self.session.run([loss, final_outputs], feed_dict=feed_dict)
+        batch_loss, results = self.session.run([network_loss, p], feed_dict=feed_dict)
 
         return batch_loss, results
 
     def predict(self, input_dict, action_mask):
         feed_dict = self.get_feed_dict(input_dict, action_mask)
-        results = self.session.run(final_outputs, feed_dict=feed_dict)
+        results = self.session.run(p, feed_dict=feed_dict)
         return results
 
-    def get_feed_dict(self, input_dict, action_mask, labels=None, keep_dropout=False, training=False):
+    def get_feed_dict(self, input_dict, action_mask, labels=None, training=False):
         feed_dict = dict()
         for feature in feature_categories:
-            feed_dict[x[feature]] = input_dict[feature]
+            feed_dict[input_x[feature]] = input_dict[feature]
         feed_dict[output_mask] = action_mask
-        feed_dict[embedding['word']] = self.embedding['word']
-        feed_dict[embedding['subword']] = self.embedding['subword']
-        feed_dict[p_dropout] = dropout_prob if keep_dropout else 0.0
-        feed_dict[phase] = training
+        feed_dict[input_embedding['word']] = self.embedding['word']
+        feed_dict[input_embedding['subword']] = self.embedding['subword']
+        feed_dict[training_phase] = training
 
         if labels is not None:
-            feed_dict[y] = labels
+            feed_dict[y_label] = labels
 
         return feed_dict
 

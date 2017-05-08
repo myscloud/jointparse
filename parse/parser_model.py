@@ -10,7 +10,7 @@ embedding_dim = 64
 n_hidden = 150
 
 batch_size = 64
-learning_rate = 0.1
+learning_rate = 0.01
 dropout_prob = 0.5
 regularize_param = 10e-8
 
@@ -51,10 +51,9 @@ def nn_hidden_layer(x, embedding, phase):
                                                                   stddev=1.0 / sqrt(n_hidden)))
         hidden_sum = hidden_sum + tf.matmul(flatten_x[keyword], hidden_weights[keyword])
 
-    hidden_output = tf.add(hidden_sum, hidden_bias)
+    hidden_output = tf.pow(tf.add(hidden_sum, hidden_bias), 3)
 
-    normalized_outputs = nn_batch_normalization(hidden_output, phase)
-    return normalized_outputs, hidden_output, hidden_weights, hidden_bias
+    return hidden_output, hidden_weights, hidden_bias
 
 
 def nn_output_layer(hidden_output, mask):
@@ -104,7 +103,7 @@ with tf.device('/cpu:0'):
     y_label = tf.placeholder(tf.int32, [None, 1], name='y')
     output_mask = tf.placeholder(tf.float32, [None, n_output_class], name='output_mask')
 
-    h, _, h_weights, h_bias = nn_hidden_layer(input_x, input_embedding, training_phase)
+    h, h_weights, h_bias = nn_hidden_layer(input_x, input_embedding, training_phase)
     p, o_weight = nn_output_layer(h, output_mask)
     params = list(h_weights.values()) + [h_bias, o_weight]
     network_loss = nn_calculate_loss(y_label, p, params)

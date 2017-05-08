@@ -38,11 +38,13 @@ def prepare_input(options):
            network_params, feature_pattern
 
 
-def write_log(log_path, epoch_count, batch_loss,):
+def write_log(log_path, epoch_count, batch_loss, evaluation=None):
     log_file_path = log_path + 'epoch-' + '{0:04}'.format(epoch_count)
     with open(log_file_path, 'w') as log_file:
         log_file.write('epoch ' + str(epoch_count) + '\n')
         log_file.write(str(batch_loss) + '\n')
+        if evaluation is not None:
+            log_file.write(str(evaluation) + '\n')
 
 
 def train(options):
@@ -121,7 +123,7 @@ def train(options):
         print(training_batch_loss)
 
         # evaluate
-        f1_score = uas_score = None
+        f1_score = uas_score = epoch_eval = None
         if epoch_count % 5 == 0:
             evaluation_list = list()
             parser_count = 0
@@ -146,7 +148,7 @@ def train(options):
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)
         average_batch_loss = sum(last_batch_loss) / len(last_batch_loss)
-        write_log(options['parser_log_dir'], epoch_count, training_batch_loss)
+        write_log(options['parser_log_dir'], epoch_count, training_batch_loss, epoch_eval)
 
         if training_batch_loss < average_batch_loss or epoch_count < 20 \
                 or (f1_score and f1_score > average_f1) or (uas_score and uas_score > average_uas):

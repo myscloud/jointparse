@@ -144,6 +144,7 @@ def train(options):
             last_uas.append(uas_score)
             max_f1 = max(f1_score, max_f1)
             max_uas = max(uas_score, max_uas)
+            print(f1_score, uas_score)
 
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)

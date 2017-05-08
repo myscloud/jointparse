@@ -24,15 +24,16 @@ def nn_batch_normalization(z, training_phase):
     pop_mean = tf.Variable(tf.zeros(z.get_shape()[-1]), trainable=False)
     pop_var = tf.Variable(tf.ones(z.get_shape()[-1]), trainable=False)
 
-    if training_phase:
-        batch_mean, batch_var = tf.nn.moments(z, [0])
-        train_mean = tf.assign(pop_mean, tf.multiply(bn_decay, pop_mean) + tf.multiply(1-bn_decay, batch_mean))
-        train_var = tf.assign(pop_var, tf.multiply(bn_decay, pop_var) + tf.multiply(1-bn_decay, batch_var))
+    batch_mean, batch_var = tf.nn.moments(z, [0])
+    train_mean = tf.assign(pop_mean, tf.multiply(bn_decay, pop_mean) + tf.multiply(1-bn_decay, batch_mean))
+    train_var = tf.assign(pop_var, tf.multiply(bn_decay, pop_var) + tf.multiply(1-bn_decay, batch_var))
 
-        with tf.control_dependencies([train_mean, train_var]):
-            return tf.nn.batch_normalization(z, batch_mean, batch_var, bn_beta, bn_gamma, bn_epsilon)
-    else:
-        return tf.nn.batch_normalization(z, pop_mean, pop_var, bn_beta, bn_gamma, bn_epsilon)
+    with tf.control_dependencies([train_mean, train_var]):
+        def training_bn(): return tf.nn.batch_normalization(z, batch_mean, batch_var, bn_beta, bn_gamma, bn_epsilon)
+
+    def test_bn(): return tf.nn.batch_normalization(z, pop_mean, pop_var, bn_beta, bn_gamma, bn_epsilon)
+
+    return tf.cond(training_phase, training_bn, test_bn)
 
 
 def nn_hidden_layer(x, embedding, phase):

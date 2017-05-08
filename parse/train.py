@@ -134,6 +134,7 @@ def train(options):
             evaluation = get_parser_evaluation(predicted_parser.results[1:], data_label)
             evaluation_list.append(evaluation)
             parser_count += 1
+            break
 
         epoch_eval = get_epoch_evaluation(evaluation_list)
         f1_score = epoch_eval['word_f1_score']

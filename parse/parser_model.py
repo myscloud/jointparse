@@ -13,6 +13,7 @@ batch_size = 64
 learning_rate = 0.1
 dropout_prob = 0.5
 regularize_param = 10e-8
+bn_epsilon = 10e-2
 
 
 def nn_hidden_layer(x, embedding, phase):
@@ -32,8 +33,12 @@ def nn_hidden_layer(x, embedding, phase):
 
     hidden_output = tf.add(hidden_sum, hidden_bias)
 
-    normalized_tensor = tf.contrib.layers.batch_norm(hidden_output, center=True, scale=True, is_training=phase)
-    normalized_outputs = tf.nn.tanh(normalized_tensor)
+    # batch normalization
+    batch_mean, batch_var = tf.nn.moments(hidden_output, [0])
+    bn_gamma = tf.Variable(tf.ones([n_hidden]))
+    bn_beta = tf.Variable(tf.zeros([n_hidden]))
+    normalized_tensor = tf.nn.batch_normalization(hidden_output, batch_mean, batch_var, bn_gamma, bn_beta, bn_epsilon)
+    normalized_outputs = tf.pow(normalized_tensor, 3)
     return normalized_outputs, hidden_output, hidden_weights, hidden_bias
 
 

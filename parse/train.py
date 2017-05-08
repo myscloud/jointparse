@@ -145,6 +145,7 @@ def train(options):
             max_f1 = max(f1_score, max_f1)
             max_uas = max(uas_score, max_uas)
             print(f1_score, uas_score)
+            model.save_model(options['parser_model_save_path'], epoch_count)
 
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)
@@ -155,7 +156,6 @@ def train(options):
                 or (f1_score and f1_score > average_f1) or (uas_score and uas_score > average_uas):
             pass
         else:
-            model.save_model(options['parser_model_save_path'], epoch_count)
             break
 
         epoch_count += 1

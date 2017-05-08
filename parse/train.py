@@ -121,32 +121,35 @@ def train(options):
         print(training_batch_loss)
 
         # evaluate
-        # evaluation_list = list()
-        # parser_count = 0
-        #
-        # for sentence, data_label, subword_label in zip(
-        #         eval_parser_input.data, eval_parser_label.data, eval_parser_label.subword):
-        #     parser = Parser(sentence, network_params, labels=[data_label, subword_label])
-        #     predicted_parser = predict(parser, model, feature_pattern,
-        #                                action_list, network_params.params['reverse_action_map'])
-        #     evaluation = get_parser_evaluation(predicted_parser.results[1:], data_label)
-        #     evaluation_list.append(evaluation)
-        #     parser_count += 1
-        #
-        # epoch_eval = get_epoch_evaluation(evaluation_list)
-        # f1_score = epoch_eval['word_f1_score']
-        # uas_score = epoch_eval['uas_accuracy']
-        # last_f1.append(f1_score)
-        # last_uas.append(uas_score)
-        # max_f1 = max(f1_score, max_f1)
-        # max_uas = max(uas_score, max_uas)
-        #
-        # average_f1 = sum(last_f1) / len(last_f1)
-        # average_uas = sum(last_uas) / len(last_uas)
+        f1_score = uas_score = None
+        if epoch_count % 5 == 0:
+            evaluation_list = list()
+            parser_count = 0
+
+            for sentence, data_label, subword_label in zip(
+                    eval_parser_input.data, eval_parser_label.data, eval_parser_label.subword):
+                parser = Parser(sentence, network_params, labels=[data_label, subword_label])
+                predicted_parser = predict(parser, model, feature_pattern,
+                                           action_list, network_params.params['reverse_action_map'])
+                evaluation = get_parser_evaluation(predicted_parser.results[1:], data_label)
+                evaluation_list.append(evaluation)
+                parser_count += 1
+
+            epoch_eval = get_epoch_evaluation(evaluation_list)
+            f1_score = epoch_eval['word_f1_score']
+            uas_score = epoch_eval['uas_accuracy']
+            last_f1.append(f1_score)
+            last_uas.append(uas_score)
+            max_f1 = max(f1_score, max_f1)
+            max_uas = max(uas_score, max_uas)
+
+        average_f1 = sum(last_f1) / len(last_f1)
+        average_uas = sum(last_uas) / len(last_uas)
         average_batch_loss = sum(last_batch_loss) / len(last_batch_loss)
         write_log(options['parser_log_dir'], epoch_count, training_batch_loss)
 
-        if training_batch_loss < average_batch_loss or epoch_count < 20:
+        if training_batch_loss < average_batch_loss or epoch_count < 20 \
+                or (f1_score and f1_score > average_f1) or (uas_score and uas_score > average_uas):
             pass
         else:
             model.save_model(options['parser_model_save_path'], epoch_count)

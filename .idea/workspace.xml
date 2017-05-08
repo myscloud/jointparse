@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f876e7c3-957b-4441-a97a-a2403f2b58e5" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/parse/parser_model.py" afterPath="$PROJECT_DIR$/parse/parser_model.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/parse/train.py" afterPath="$PROJECT_DIR$/parse/train.py" />
     </list>
@@ -66,8 +65,8 @@
       <file leaf-file-name="parser_model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/parse/parser_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="374">
-              <caret line="35" column="32" lean-forward="false" selection-start-line="35" selection-start-column="32" selection-end-line="35" selection-end-column="32" />
+            <state relative-caret-position="-102">
+              <caret line="55" column="68" lean-forward="false" selection-start-line="55" selection-start-column="68" selection-end-line="55" selection-end-column="68" />
               <folding />
             </state>
           </provider>
@@ -86,8 +85,8 @@
       <file leaf-file-name="train.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/parse/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="555">
-              <caret line="148" column="55" lean-forward="false" selection-start-line="148" selection-start-column="55" selection-end-line="148" selection-end-column="55" />
+            <state relative-caret-position="2363">
+              <caret line="152" column="16" lean-forward="true" selection-start-line="152" selection-start-column="16" selection-end-line="152" selection-end-column="16" />
               <folding />
             </state>
           </provider>
@@ -830,14 +829,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/parse/parser_model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="374">
-          <caret line="35" column="32" lean-forward="false" selection-start-line="35" selection-start-column="32" selection-end-line="35" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/evaluate/ws_evaluate.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="578">
@@ -856,10 +847,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/parse/parser_model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-102">
+          <caret line="55" column="68" lean-forward="false" selection-start-line="55" selection-start-column="68" selection-end-line="55" selection-end-column="68" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/parse/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="555">
-          <caret line="148" column="55" lean-forward="false" selection-start-line="148" selection-start-column="55" selection-end-line="148" selection-end-column="55" />
+        <state relative-caret-position="2363">
+          <caret line="152" column="16" lean-forward="true" selection-start-line="152" selection-start-column="16" selection-end-line="152" selection-end-column="16" />
           <folding />
         </state>
       </provider>

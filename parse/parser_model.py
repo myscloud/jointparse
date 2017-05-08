@@ -14,6 +14,26 @@ learning_rate = 0.1
 dropout_prob = 0.5
 regularize_param = 10e-8
 
+bn_epsilon = 10e-2
+bn_decay = 0.9
+
+
+def nn_batch_normalization(z, training_phase):
+    bn_gamma = tf.Variable(tf.ones(z.get_shape()[-1]))
+    bn_beta = tf.Variable(tf.zeros(z.get_shape()[-1]))
+    pop_mean = tf.Variable(tf.zeros(z.get_shape()[-1]), trainable=False)
+    pop_var = tf.Variable(tf.ones(z.get_shape()[-1]), trainable=False)
+
+    if training_phase:
+        batch_mean, batch_var = tf.nn.moments(z, [0])
+        train_mean = tf.assign(pop_mean, tf.multiply(bn_decay, pop_mean) + tf.multiply(1-bn_decay, batch_mean))
+        train_var = tf.assign(pop_var, tf.multiply(bn_decay, pop_var) + tf.multiply(1-bn_decay, batch_var))
+
+        with tf.control_dependencies([train_mean, train_var]):
+            return tf.nn.batch_normalization(z, batch_mean, batch_var, bn_beta, bn_gamma, bn_epsilon)
+    else:
+        return tf.nn.batch_normalization(z, pop_mean, pop_var, bn_beta, bn_gamma, bn_epsilon)
+
 
 def nn_hidden_layer(x, embedding, phase):
     hidden_sum = tf.Variable(tf.zeros([n_hidden]))
@@ -32,8 +52,7 @@ def nn_hidden_layer(x, embedding, phase):
 
     hidden_output = tf.add(hidden_sum, hidden_bias)
 
-    normalized_tensor = tf.contrib.layers.batch_norm(hidden_output, center=True, scale=True, is_training=phase)
-    normalized_outputs = tf.pow(normalized_tensor, 3)
+    normalized_outputs = nn_batch_normalization(hidden_output, phase)
     return normalized_outputs, hidden_output, hidden_weights, hidden_bias
 
 

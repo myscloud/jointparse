@@ -97,21 +97,21 @@ def train(options):
         training_input_feeder.shuffle()
 
         # training
-        # while not training_input_feeder.is_epoch_end():
-        #     batch_training_pairs = training_input_feeder.get_next_batch()
-        #     input_dict = dict()
-        #     for feature_idx, feature in enumerate(feature_categories):
-        #         input_dict[feature] = batch_training_pairs[feature_idx]
-        #     labels = batch_training_pairs[-2]
-        #     feasible_actions = batch_training_pairs[-1]
-        #     loss = model.train(input_dict, labels, feasible_actions)
-        #
-        #     training_loss_sum += loss
-        #     iteration_count += 1
-        #
-        # training_batch_loss = training_loss_sum / iteration_count
-        # last_batch_loss.append(training_batch_loss)
-        # print(training_batch_loss)
+        while not training_input_feeder.is_epoch_end():
+            batch_training_pairs = training_input_feeder.get_next_batch()
+            input_dict = dict()
+            for feature_idx, feature in enumerate(feature_categories):
+                input_dict[feature] = batch_training_pairs[feature_idx]
+            labels = batch_training_pairs[-2]
+            feasible_actions = batch_training_pairs[-1]
+            loss = model.train(input_dict, labels, feasible_actions)
+
+            training_loss_sum += loss
+            iteration_count += 1
+
+        training_batch_loss = training_loss_sum / iteration_count
+        last_batch_loss.append(training_batch_loss)
+        print(training_batch_loss)
 
         # evaluate
         evaluation_list = list()
@@ -140,13 +140,14 @@ def train(options):
         average_f1 = sum(last_f1) / len(last_f1)
         average_uas = sum(last_uas) / len(last_uas)
         average_batch_loss = sum(last_batch_loss) / len(last_batch_loss)
+        print(training_batch_loss)
         print(f1_score, uas_score)
 
-        # if training_batch_loss < average_batch_loss or f1_score > average_f1 \
-        #         or uas_score > average_uas or epoch_count < 20:
-        #     pass
-        # else:
-        #     model.save_model(options['parser_model_save_path'], epoch_count)
-        #     break
+        if training_batch_loss < average_batch_loss or f1_score > average_f1 \
+                or uas_score > average_uas or epoch_count < 20:
+            pass
+        else:
+            model.save_model(options['parser_model_save_path'], epoch_count)
+            break
 
         epoch_count += 1

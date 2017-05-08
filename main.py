@@ -9,6 +9,8 @@ from pos_tag.predict import predict as pos_predict
 from pos_tag.evaluate import evaluate_from_file
 from parse.train import train as parser_train
 
+from evaluate.ws_evaluate import evaluate_word_segmentation
+
 parser = argparse.ArgumentParser(description='Specify an action and config file path')
 parser.add_argument('--config', dest='config_file_path', type=str, required=True,
                     help='Path to the configuration file')
@@ -16,6 +18,8 @@ parser.add_argument('--train_pos', action='store_true', dest='is_pos_train',
                     help='Train boundary-POS tag on training data')
 parser.add_argument('--eval_pos', action='store_true', dest='is_pos_eval',
                     help='Evaluate POS tagging results from a result file')
+parser.add_argument('--eval_ws', action='store_true', dest='is_ws_eval',
+                    help='Evaluate word segmentation results from a candidate file')
 parser.add_argument('--test_pos', action='store_true', dest='is_pos_test',
                     help='Test boundary-POS tag on test data')
 parser.add_argument('--train_parser', action='store_true', dest='is_parser_train',
@@ -25,7 +29,8 @@ parser_function_map = {
     'is_pos_train': pos_train,
     'is_pos_test': pos_predict,
     'is_parser_train': parser_train,
-    'is_pos_eval': evaluate_from_file
+    'is_pos_eval': evaluate_from_file,
+    'is_ws_eval': evaluate_word_segmentation
 }
 
 

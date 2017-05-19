@@ -3,7 +3,7 @@ import tools.data_transform as data_trans
 from pos_tag.evaluate import evaluate_accuracy
 
 
-def predict(model, lang_params, pos_data, data_feeder, data_set_name, candidate_no):
+def predict(model, lang_params, pos_data, data_feeder, data_set_name, candidate_no, pos_type):
     predicted_results = list()
     data_feeder.reset()
     correct_count_sum = tag_count_sum = 0
@@ -21,4 +21,7 @@ def predict(model, lang_params, pos_data, data_feeder, data_set_name, candidate_
     data_accuracy = (correct_count_sum / tag_count_sum) * 100
     print(data_set_name, 'accuracy: ', data_accuracy)
 
-    pos_data.map_results_back(predicted_results, lang_params.params['reverse_bpos_map'])
+    map_name = {'bpos': 'reverse_bpos_map', 'pos': 'reverse_pos_map'}
+    pos_data.map_results_back(predicted_results, lang_params.params[map_name[pos_type]])
+    return data_accuracy
+

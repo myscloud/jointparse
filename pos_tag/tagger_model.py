@@ -5,20 +5,20 @@ import numpy as np
 # parameters
 embedding_dim = 64
 batch_size = 128
-learning_rate = 0.001
+learning_rate = 0.01
 vocabulary_size = 100004
 
 # network parameters
 n_steps = 30
 n_input = 64
 n_hidden = 100
-n_classes = 60
-n_bilstm_stack = 2
+n_classes = 15
+dropout_prob = 0.5
 
 graph = tf.Graph()
 with graph.as_default():
-    x = tf.placeholder(tf.int32, [batch_size, n_steps])
-    y = tf.placeholder(tf.int32, [batch_size, n_steps])
+    x = tf.placeholder(tf.int32, [None, n_steps])
+    y = tf.placeholder(tf.int32, [None, n_steps])
     sentence_len = tf.placeholder(tf.int32, [batch_size])
     embedding = tf.placeholder("float", [vocabulary_size, n_input])
 
@@ -36,20 +36,19 @@ with graph.as_default():
         y_label = tf.reshape(y_label, [-1, n_classes])
         y_label = tf.split(y_label, n_steps, 0)
 
-        lstm_fw_cells = [rnn.BasicLSTMCell(n_hidden)] * n_bilstm_stack
-        lstm_bw_cells = [rnn.BasicLSTMCell(n_hidden)] * n_bilstm_stack
+        lstm_fw_cell = rnn.BasicLSTMCell(n_hidden)
+        lstm_bw_cell = rnn.BasicLSTMCell(n_hidden)
 
-        outputs1, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cells[0], lstm_bw_cells[0], x_input,
+        rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x_input,
                                                      dtype=tf.float32, sequence_length=sentence_len)
 
-
         # TODO: Edit Tagger model
-        predicted = [tf.matmul(outputs1[idx], out_weights) + out_biases for idx in range(n_steps)]
+        outputs = [tf.nn.tanh(tf.matmul(rnn_outputs[idx], out_weights) + out_biases) for idx in range(n_steps)]
+        final_output = tf.transpose(outputs, perm=[1, 0, 2])
 
-        final_output = tf.transpose(predicted, perm=[1, 0, 2])
-
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=predicted, labels=y_label))
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+        dropped_outputs = tf.nn.dropout(outputs, dropout_prob)
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped_outputs, labels=y_label))
+        optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
@@ -62,8 +61,8 @@ class TaggerModel:
         self.session = tf.Session(graph=graph)
         if model_path:
             saver.restore(self.session, model_path)
-
-        self.session.run(init)
+        else:
+            self.session.run(init)
 
     def train(self, train_input, train_label, train_sent_len):
         feed_dict = {
@@ -72,11 +71,8 @@ class TaggerModel:
             embedding: self.embedding,
             sentence_len: train_sent_len
         }
-        # _, cross_entropy_loss = self.session.run([optimizer, loss], feed_dict=feed_dict)
-        out = self.session.run(outputs, feed_dict=feed_dict)
-        print(np.asarray(out).shape)
-        # return cross_entropy_loss
-        return 0
+        _, cross_entropy_loss = self.session.run([optimizer, loss], feed_dict=feed_dict)
+        return cross_entropy_loss
 
     def evaluate(self, eval_input, eval_label, eval_sent_len):
         feed_dict = {
@@ -99,5 +95,5 @@ class TaggerModel:
         predicted_result = self.session.run(final_output, feed_dict=feed_dict)
         return predicted_result
 
-    def save_model(self, model_path, global_step):
-        saver.save(self.session, model_path, global_step=global_step)
+    def save_model(self, model_path):
+        saver.save(self.session, model_path)

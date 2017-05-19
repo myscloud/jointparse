@@ -1,28 +1,62 @@
 
 class DataPOS:
-    def __init__(self, subwords, lang_params, train_sent_len=30, overlap_train=2, data_prop=None):
-        self.subwords_info = subwords
-        self.subwords = DataPOS.get_subword_word(subwords)
-
+    def __init__(self, subwords, lang_params, pos_type, train_sent_len=30, overlap_train=2, data_prop=None):
         self.n_len = train_sent_len
         self.overlap = overlap_train
 
-        char_special_tok = {'START': lang_params.params['subword_map']['<S>'],
-                            'END': lang_params.params['subword_map']['</S>'],
-                            'PAD': lang_params.params['subword_map']['<PAD>']}
+        if pos_type == 'pos':
+            self.words, word_special_tok, words_index, pos_special_tok, pos_index, self.pos_val = \
+                DataPOS.get_word_essential_data(data_prop, lang_params)
+        else:  # bpos
+            self.words, word_special_tok, words_index, pos_special_tok, pos_index, self.pos_val = \
+                DataPOS.get_subword_essential_data(subwords, lang_params, data_prop)
 
-        self.subwords_index = lang_params.map_with_params(self.subwords, 'subword_map', unk_name='<UNK>')
-        self.phrases, self.sent_phrase_map, self.phrase_token_map, self.phrase_len = \
-            self.trim_sentence(self.subwords_index, char_special_tok)
         self.predicted_tags = None
 
+        self.phrases, self.sent_phrase_map, self.phrase_token_map, self.phrase_len = \
+            self.trim_sentence(words_index, word_special_tok)
+        if pos_index is not None:
+            self.phrases_label, _, _, _ = self.trim_sentence(pos_index, pos_special_tok)
+
+    @staticmethod
+    def get_subword_essential_data(subwords_info, lang_params, data_prop):
+        subwords = DataPOS.get_subword_word(subwords_info)
+        subword_special_tok = {'START': lang_params.params['subword_map']['<S>'],
+                            'END': lang_params.params['subword_map']['</S>'],
+                            'PAD': lang_params.params['subword_map']['<PAD>']}
+        subwords_index = lang_params.map_with_params(subwords, 'subword_map', unk_name='<UNK>')
+
+        pos_special_tok, pos_index, pos_val = None, None, None
         if data_prop:
             single_x = lang_params.params['bpos_map']['S-X']
             pos_special_tok = {'START': single_x, 'END': single_x, 'PAD': single_x}
 
-            self.pos_val = self.generate_boundary_pos_tag(data_prop)
-            self.pos_index = lang_params.map_with_params(self.pos_val, 'bpos_map')
-            self.phrases_label, _, _, _ = self.trim_sentence(self.pos_index, pos_special_tok)
+            pos_val = DataPOS.generate_boundary_pos_tag(subwords_info, data_prop)
+            pos_index = lang_params.map_with_params(pos_val, 'bpos_map')
+
+        return subwords, subword_special_tok, subwords_index, pos_special_tok, pos_index, pos_val
+
+    @staticmethod
+    def get_word_essential_data(data_prop, lang_params):
+        words = list()
+        pos_list = list()
+        for sentence in data_prop:
+            word_sentence = [x.word for x in sentence]
+            words.append(word_sentence)
+
+            pos_sentence = [x.pos for x in sentence]
+            pos_list.append(pos_sentence)
+
+        word_special_tok = {'START': lang_params.params['word_map']['<S>'],
+                            'END': lang_params.params['word_map']['</S>'],
+                            'PAD': lang_params.params['word_map']['<PAD>']}
+        words_index = lang_params.map_with_params(words, 'word_map', unk_name='<UNK>')
+
+        pos_x = lang_params.params['pos_map']['X']
+        pos_special_tok = {'START': pos_x, 'END': pos_x, 'PAD': pos_x}
+        pos_index = lang_params.map_with_params(pos_list, 'pos_map')
+
+        return words, word_special_tok, words_index, pos_special_tok, pos_index, pos_list
 
     @staticmethod
     def get_subword_word(subwords_info):
@@ -33,9 +67,10 @@ class DataPOS:
 
         return subwords
 
-    def generate_boundary_pos_tag(self, data_prop):
+    @staticmethod
+    def generate_boundary_pos_tag(subwords_info, data_prop):
         pos_list = list()
-        for subword_sent, data_sent in zip(self.subwords_info, data_prop):
+        for subword_sent, data_sent in zip(subwords_info, data_prop):
             sentence_pos_list = list()
             for subword_idx, subword_info in enumerate(subword_sent):
                 left_word_idx = subword_sent[subword_idx-1].word_idx if subword_idx > 0 else None
@@ -125,12 +160,12 @@ class DataPOS:
         out_file = open(output_path, 'w')
         sentence_count = 0
 
-        for sentence_info, sentence_tags, sent_real_tag in zip(self.subwords_info, self.predicted_tags, self.pos_val):
+        for sentence_info, sentence_tags, sent_real_tag in zip(self.words, self.predicted_tags, self.pos_val):
             out_file.write('#Sentence ' + str(sentence_count + 1) + '\n')
             subword_count = 0
-            for subword, pos_tags, real_tag in zip(sentence_info, sentence_tags, sent_real_tag):
+            for word, pos_tags, real_tag in zip(sentence_info, sentence_tags, sent_real_tag):
                 candidate_tags = ','.join(pos_tags)
-                out_file.write(str(subword_count) + '\t' + subword.subword + '\t' + candidate_tags + '\t' + real_tag + '\n')
+                out_file.write(str(subword_count) + '\t' + word + '\t' + candidate_tags + '\t' + real_tag + '\n')
                 subword_count += 1
 
             out_file.write('\n')

@@ -109,15 +109,14 @@ def train(options):
         print('eval accuracy', eval_accuracy)
 
         average_loss = sum(latest_epoch_loss) / len(latest_epoch_loss)
-        if train_loss > average_loss or epoch_count == 10:
+        if train_loss > average_loss:
             train_data.write_tagged_results(options['pos_results_path'] + 'train.pos')
             eval_data.write_tagged_results(options['pos_results_path'] + 'eval.pos')
             dev_data.write_tagged_results(options['pos_results_path'] + 'dev.pos')
             test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
             break
 
-        model_path_name = options['pos_model_save_path'] + str(epoch_count) + '.ckpt'
-        model.save_model(model_path_name)
+        model.save_model(options['pos_model_save_path'], epoch_count)
         epoch_count += 1
 
         # get prediction results

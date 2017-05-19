@@ -51,7 +51,7 @@ with graph.as_default():
         optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=1000)
 
 
 class TaggerModel:
@@ -95,5 +95,5 @@ class TaggerModel:
         predicted_result = self.session.run(final_output, feed_dict=feed_dict)
         return predicted_result
 
-    def save_model(self, model_path):
-        saver.save(self.session, model_path)
+    def save_model(self, model_path, global_step):
+        saver.save(self.session, model_path, global_step=global_step)

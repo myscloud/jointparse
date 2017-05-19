@@ -5,7 +5,7 @@ import numpy as np
 # parameters
 embedding_dim = 64
 batch_size = 128
-learning_rate = 0.01
+learning_rate = 0.005
 vocabulary_size = 100004
 
 # network parameters
@@ -51,7 +51,7 @@ with graph.as_default():
         optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()
-        saver = tf.train.Saver(max_to_keep=1000)
+        saver = tf.train.Saver(max_to_keep=50)
 
 
 class TaggerModel:

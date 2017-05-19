@@ -75,6 +75,7 @@ def train(options):
     epoch_count = 0
     latest_epoch_loss = deque(maxlen=50)
     model = TaggerModel(lang_params.params['word_embedding'])
+    max_eval_acc = 0
     while True:
         print('epoch ', epoch_count)
 
@@ -116,7 +117,6 @@ def train(options):
             test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
             break
 
-        model.save_model(options['pos_model_save_path'], epoch_count)
         epoch_count += 1
 
         # get prediction results
@@ -127,3 +127,7 @@ def train(options):
         acc['dev'] = predict(model, lang_params, dev_data, dev_data_feeder, 'dev', max_k, 'pos')
         acc['test'] = predict(model, lang_params, test_data, test_data_feeder, 'test', max_k, 'pos')
         write_epoch_log(options['pos_log_dir'], epoch_count, train_loss, acc)
+
+        if acc['eval'] > max_eval_acc:
+            model.save_model(options['pos_model_save_path'], epoch_count)
+            max_eval_acc = acc['eval']

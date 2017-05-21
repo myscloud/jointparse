@@ -73,7 +73,7 @@ def train(options):
     eval_batch_count = ceil(len(eval_data.phrases) / options['pos_batch_size'])
 
     epoch_count = 0
-    latest_epoch_loss = deque(maxlen=50)
+    latest_epoch_loss = deque()
     model = TaggerModel(lang_params.params['word_embedding'])
     max_eval_acc = 0
     while True:
@@ -117,8 +117,6 @@ def train(options):
             test_data.write_tagged_results(options['pos_results_path'] + 'test.pos')
             break
 
-        epoch_count += 1
-
         # get prediction results
         max_k = options['no_pos_candidates']
         acc = dict()
@@ -131,3 +129,5 @@ def train(options):
         if acc['eval'] > max_eval_acc:
             model.save_model(options['pos_model_save_path'], epoch_count)
             max_eval_acc = acc['eval']
+
+        epoch_count += 1

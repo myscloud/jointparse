@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib import rnn
-import numpy as np
+from math import sqrt
 
 # parameters
 embedding_dim = 64
@@ -23,8 +23,8 @@ with graph.as_default():
     embedding = tf.placeholder("float", [vocabulary_size, n_input])
 
     with tf.device('/cpu:0'):
-        out_weights = tf.Variable(tf.random_normal([2 * n_hidden, n_classes]))
-        out_biases = tf.Variable(tf.random_normal([n_classes]))
+        out_weights = tf.Variable(tf.truncated_normal([2 * n_hidden, n_classes], stddev=1.0/sqrt(n_classes)))
+        out_biases = tf.Variable(tf.zeros([n_classes]))
 
         x_input = tf.nn.embedding_lookup(embedding, x)
         x_input = tf.transpose(x_input, [1, 0, 2])
@@ -43,7 +43,7 @@ with graph.as_default():
                                                      dtype=tf.float32, sequence_length=sentence_len)
 
         # TODO: Edit Tagger model
-        outputs = [tf.nn.tanh(tf.matmul(rnn_outputs[idx], out_weights) + out_biases) for idx in range(n_steps)]
+        outputs = [tf.nn.relu(tf.matmul(rnn_outputs[idx], out_weights) + out_biases) for idx in range(n_steps)]
         final_output = tf.transpose(outputs, perm=[1, 0, 2])
 
         dropped_outputs = tf.nn.dropout(outputs, dropout_prob)

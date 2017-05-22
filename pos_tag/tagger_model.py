@@ -5,13 +5,14 @@ from math import sqrt
 # parameters
 embedding_dim = 64
 batch_size = 128
-learning_rate = 0.005
+learning_rate = 0.001
 vocabulary_size = 100004
 
 # network parameters
 n_steps = 30
 n_input = 64
-n_hidden = 100
+n_hidden_1 = 150
+n_hidden_2 = 100
 n_classes = 15
 dropout_prob = 0.5
 
@@ -23,7 +24,10 @@ with graph.as_default():
     embedding = tf.placeholder("float", [vocabulary_size, n_input])
 
     with tf.device('/cpu:0'):
-        out_weights = tf.Variable(tf.truncated_normal([2 * n_hidden, n_classes], stddev=1.0/sqrt(n_classes)))
+        hidden_weights = tf.Variable(tf.truncated_normal([2 * n_hidden_1, n_hidden_2], stddev=1.0/sqrt(n_hidden_2)))
+        hidden_biases = tf.Variable(tf.zeros([n_hidden_2]))
+
+        out_weights = tf.Variable(tf.truncated_normal([n_hidden_2, n_classes], stddev=1.0/sqrt(n_classes)))
         out_biases = tf.Variable(tf.zeros([n_classes]))
 
         x_input = tf.nn.embedding_lookup(embedding, x)
@@ -36,18 +40,22 @@ with graph.as_default():
         y_label = tf.reshape(y_label, [-1, n_classes])
         y_label = tf.split(y_label, n_steps, 0)
 
-        lstm_fw_cell = rnn.BasicLSTMCell(n_hidden)
-        lstm_bw_cell = rnn.BasicLSTMCell(n_hidden)
+        lstm_fw_cell = rnn.BasicLSTMCell(n_hidden_1)
+        lstm_bw_cell = rnn.BasicLSTMCell(n_hidden_1)
 
         rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x_input,
                                                      dtype=tf.float32, sequence_length=sentence_len)
 
-        # TODO: Edit Tagger model
-        outputs = [tf.nn.relu(tf.matmul(rnn_outputs[idx], out_weights) + out_biases) for idx in range(n_steps)]
-        final_output = tf.transpose(outputs, perm=[1, 0, 2])
+        hidden_outputs = [tf.nn.tanh(tf.matmul(rnn_outputs[idx], hidden_weights) + hidden_biases)
+                          for idx in range(n_steps)]
 
-        dropped_outputs = tf.nn.dropout(outputs, dropout_prob)
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped_outputs, labels=y_label))
+        dropped_outputs = tf.nn.dropout(hidden_outputs, dropout_prob)
+        training_outputs = [tf.matmul(dropped_outputs[idx], out_weights) + out_biases for idx in range(n_steps)]
+
+        predicted_outputs = [tf.matmul(hidden_outputs[idx], out_weights) + out_biases for idx in range(n_steps)]
+        final_output = tf.transpose(predicted_outputs, perm=[1, 0, 2])
+
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=training_outputs, labels=y_label))
         optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()

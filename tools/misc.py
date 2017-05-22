@@ -10,7 +10,7 @@ def get_options(args):
 
 
 def random_func(options):
-    collect_epoch_details('models/zh/pos/logs/logs/', 'models/zh/pos/logs/logs/all_epoch')
+    collect_epoch_details('log/zh/pos/model03/', 'log/zh/pos/model03/all_epoch')
 
 
 def write_embedding_vectors(options):
@@ -34,7 +34,7 @@ def collect_epoch_details(log_dir, output_file_dir):
 
     out_file = open(output_file_dir, 'w')
     n_files = len([f for f in listdir(log_dir) if isfile(join(log_dir, f))])
-    for epoch_count in range(1, n_files):
+    for epoch_count in range(0, n_files-1):
         epoch_log_file_dir = join(log_dir, 'epoch_' + str(epoch_count))
         with open(epoch_log_file_dir) as epoch_log_file:
             line = epoch_log_file.read()

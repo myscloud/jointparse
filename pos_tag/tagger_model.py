@@ -15,6 +15,7 @@ n_hidden_1 = 150
 n_hidden_2 = 100
 n_classes = 15
 dropout_prob = 0.5
+l2_beta = 0.01
 
 graph = tf.Graph()
 with graph.as_default():
@@ -55,7 +56,9 @@ with graph.as_default():
         predicted_outputs = [tf.matmul(hidden_outputs[idx], out_weights) + out_biases for idx in range(n_steps)]
         final_output = tf.transpose(predicted_outputs, perm=[1, 0, 2])
 
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=training_outputs, labels=y_label))
+        ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=training_outputs, labels=y_label))
+        l2_loss = tf.nn.l2_loss(hidden_weights) + tf.nn.l2_loss(out_weights)
+        loss = tf.reduce_mean(ce_loss + (l2_beta * l2_loss))
         optimizer = tf.train.AdagradOptimizer(learning_rate=learning_rate).minimize(loss)
 
         init = tf.global_variables_initializer()

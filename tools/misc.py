@@ -10,7 +10,7 @@ def get_options(args):
 
 
 def random_func(options):
-    collect_epoch_details('log/zh/pos/model03/', 'log/zh/pos/model03/all_epoch')
+    collect_epoch_details('log/zh/pos/model06/', 'log/zh/pos/model06/all_epoch')
 
 
 def write_embedding_vectors(options):

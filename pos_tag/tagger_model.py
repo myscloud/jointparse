@@ -5,7 +5,7 @@ from math import sqrt
 # parameters
 embedding_dim = 64
 batch_size = 128
-learning_rate = 0.05
+learning_rate = 0.01
 vocabulary_size = 100004
 
 # network parameters
@@ -42,10 +42,10 @@ with graph.as_default():
         y_label = tf.reshape(y_label, [-1, n_classes])
         y_label = tf.split(y_label, n_steps, 0)
 
-        lstm_fw_cell = rnn.BasicLSTMCell(n_hidden_1)
-        lstm_bw_cell = rnn.BasicLSTMCell(n_hidden_1)
+        lstm_fw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
+        lstm_bw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
 
-        rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x_input,
+        rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cells, lstm_bw_cells, x_input,
                                                      dtype=tf.float32, sequence_length=sentence_len)
 
         hidden_outputs = [tf.nn.tanh(tf.matmul(rnn_outputs[idx], hidden_weights) + hidden_biases)

@@ -5,7 +5,7 @@ from math import sqrt
 # network parameters
 learning_rate = 0.1
 gaussian_noise = 0.2
-dropout_prob = 0.3
+dropout_prob = 0.5
 
 word_vocab_size = 100004
 subword_vocab_size = 100004

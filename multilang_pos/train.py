@@ -26,6 +26,7 @@ def train(options):
 
     model = TaggerModel()
     epoch_count = 0
+    max_eval_acc = 0
 
     # generate eval gold tags
     raw_gold_tags = data_set['eval']['pos_labels']
@@ -64,7 +65,10 @@ def train(options):
         accuracy, correct_count, all_count = calculate_accuracy_one_tag(eval_gold_tags, all_predicted_tags)
         print('eval accuracy:', accuracy, '(', correct_count, 'from', all_count)
 
-        model.save_model(options['pos_model_save_path'], epoch_count)
+        if accuracy > max_eval_acc:
+            model.save_model(options['pos_model_save_path'], epoch_count)
+            max_eval_acc = accuracy
+
         print('----------------------------')
         epoch_count += 1
         if epoch_count == 20:

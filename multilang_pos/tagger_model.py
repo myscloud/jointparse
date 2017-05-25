@@ -22,7 +22,7 @@ n_output['tag'] = 15
 n_output['word_freq'] = 14
 
 # other parameters
-n_saved_models = 30
+n_saved_models = 2
 
 x = dict()
 x['words'] = tf.placeholder(tf.int32, [None, None], name='input_words')

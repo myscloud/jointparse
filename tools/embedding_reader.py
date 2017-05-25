@@ -48,6 +48,20 @@ class NetworkParams:
     def __init__(self):
         self.params = dict()
 
+    def set_from_options(self, options, properties):
+        if 'subword' in properties:
+            self.set_subword_embedding(options['subword_embedding'], options['subword_embedding_map'])
+        if 'word' in properties:
+            self.set_word_embedding(options['word_embedding'], options['word_embedding_map'])
+        if 'action' in properties:
+            self.set_action_map(options['action_map'])
+        if 'bpos' in properties:
+            self.set_index_file('bpos_map', 'reverse_bpos_map', options['bpos_map'])
+        if 'pos' in properties:
+            self.set_index_file('pos_map', 'reverse_pos_map', options['pos_map'])
+        if 'dep_label' in properties:
+            self.set_index_file('dep_label_map', 'reverse_dep_label_map', options['dep_label_map'])
+
     def set_subword_embedding(self, embedding_file, embedding_map_file):
         self.params['subword_embedding'] = np.load(embedding_file)
         self.params['subword_map'], self.params['reverse_subword_map'] = read_embedding_map(embedding_map_file)

@@ -5,7 +5,7 @@ from math import sqrt
 # parameters
 embedding_dim = 64
 batch_size = 128
-learning_rate = 0.01
+learning_rate = 0.05
 vocabulary_size = 100004
 
 # network parameters
@@ -16,7 +16,7 @@ n_hidden_1 = 150
 n_hidden_2 = 100
 n_classes = 15
 dropout_prob = 0.5
-l2_beta = 10e-4
+l2_beta = 10e-8
 
 graph = tf.Graph()
 with graph.as_default():
@@ -42,11 +42,15 @@ with graph.as_default():
         y_label = tf.reshape(y_label, [-1, n_classes])
         y_label = tf.split(y_label, n_steps, 0)
 
-        lstm_fw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
-        lstm_bw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
+        with tf.variable_scope('LSTM') as lstm_vs:
+            lstm_fw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
+            lstm_bw_cells = rnn.MultiRNNCell(cells=[rnn.BasicLSTMCell(n_hidden_1) for _ in range(2)])
 
-        rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cells, lstm_bw_cells, x_input,
-                                                     dtype=tf.float32, sequence_length=sentence_len)
+            rnn_outputs, _, _ = rnn.static_bidirectional_rnn(lstm_fw_cells, lstm_bw_cells, x_input,
+                                                         dtype=tf.float32, sequence_length=sentence_len)
+            # lstm_variables = [v for v in tf.all_variables() if v.name.startswith(lstm_vs.name)]
+            # lstm_weights = [v for v in lstm_variables if 'weights' in v.name]
+            # lstm_l2_loss = sum([tf.nn.l2_loss(v) for v in lstm_weights])
 
         hidden_outputs = [tf.nn.tanh(tf.matmul(rnn_outputs[idx], hidden_weights) + hidden_biases)
                           for idx in range(n_steps)]

@@ -51,7 +51,7 @@ class BatchReader:
 
             batch_data_list.append(batch_data)
 
-        if next_idx > self.n_data:
+        if next_idx >= self.n_data:
             self.epoch_count += 1
             next_idx %= self.n_data
 

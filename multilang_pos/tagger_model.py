@@ -5,7 +5,8 @@ from math import sqrt
 # network parameters
 learning_rate = 0.1
 gaussian_noise = 0.2
-dropout_prob = 0.5
+dropout_prob = 0.3
+regularize_beta = 10e-8
 
 word_vocab_size = 100004
 subword_vocab_size = 100004
@@ -97,13 +98,17 @@ def nn_calculate_loss(predicted_outputs):
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=dropped_output))
         all_loss += ce_loss
 
+    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    l2_score = regularize_beta * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    all_loss += l2_score
+
     return all_loss
 
 
 processed_input = nn_run_input_layer(x)
 h = nn_run_hidden_layer(processed_input)
-predicted_outputs = nn_classify(h)
-loss = nn_calculate_loss(predicted_outputs)
+outputs = nn_classify(h)
+loss = nn_calculate_loss(outputs)
 optimize = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
 init = tf.global_variables_initializer()
@@ -125,7 +130,7 @@ class TaggerModel:
 
     def predict(self, input_list):
         feed_dict = TaggerModel.get_feed_dict(input_list)
-        prediction = self.session.run(predicted_outputs, feed_dict=feed_dict)
+        prediction = self.session.run(outputs, feed_dict=feed_dict)
         return prediction['tag']
 
     def save_model(self, save_path, global_step):

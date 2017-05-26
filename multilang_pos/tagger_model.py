@@ -15,7 +15,8 @@ subword_embedding_dim = 100
 
 input_subword_dim = 100
 input_dim = 100
-hidden_dim = 100
+hidden_dim = 150
+hidden_2_dim = 100
 
 output_types = ['tag', 'word_freq']
 n_output = dict()
@@ -71,8 +72,13 @@ def nn_run_hidden_layer(input_vec):
     hidden_weight = tf.Variable(tf.truncated_normal([input_dim*2, hidden_dim], stddev=1.0/sqrt(hidden_dim)),
                                 name='weights/hidden_layer')
     hidden_bias = tf.Variable(tf.zeros([hidden_dim]), name='bias/hidden_layer')
-    hidden_output = tf.nn.relu(tf.add(tf.matmul(input_vec, hidden_weight), hidden_bias))
-    return hidden_output
+
+    hidden_2_weight = tf.Variable(tf.truncated_normal([hidden_dim, hidden_2_dim], stddev=1.0/sqrt(hidden_2_dim)),
+                                  name='weights/hidden_2_layer')
+    hidden_2_bias = tf.Variable(tf.zeros([hidden_2_dim]), name='bias/hidden_2_layer')
+    hidden_1_output = tf.nn.tanh(tf.add(tf.matmul(input_vec, hidden_weight), hidden_bias))
+    hidden_2_output = tf.nn.relu(tf.add(tf.matmul(hidden_1_output, hidden_2_weight), hidden_2_bias))
+    return hidden_2_output
 
 
 def nn_classify(hidden_vec):
@@ -81,7 +87,7 @@ def nn_classify(hidden_vec):
     outputs = dict()
 
     for output_type in output_types:
-        out_weights[output_type] = tf.Variable(tf.truncated_normal([hidden_dim, n_output[output_type]],
+        out_weights[output_type] = tf.Variable(tf.truncated_normal([hidden_2_dim, n_output[output_type]],
                                                                    stddev=1.0/sqrt(n_output[output_type])),
                                                name='weights/out_'+output_type)
         out_biases[output_type] = tf.Variable(tf.zeros([n_output[output_type]]), name='bias/out_'+output_type)
@@ -98,9 +104,9 @@ def nn_calculate_loss(predicted_outputs):
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=dropped_output))
         all_loss += ce_loss
 
-    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
-    l2_score = regularize_beta * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
-    all_loss += l2_score
+    # all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    # l2_score = regularize_beta * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    # all_loss += l2_score
 
     return all_loss
 

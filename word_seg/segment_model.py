@@ -5,7 +5,7 @@ from math import sqrt
 from word_seg.custom_heap import CustomHeap
 
 # parameters
-learning_rate = 0.2
+learning_rate = 0.01
 beam_size = 10
 margin_loss_discount = 0.2
 dropout_rate = 0.2
@@ -13,6 +13,7 @@ l2_lambda = 10e-4
 
 subword_lstm_dim = 100
 bigram_lstm_dim = 100
+sent_lstm_dim = 200
 hidden_dim = 150
 
 subword_vocab_size = 100004
@@ -44,8 +45,22 @@ def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
     return concat_output
 
 
+def nn_lstm_sentence_layer(input_vec):
+    lstm_input = tf.expand_dims(input_vec, axis=0)
+
+    with tf.variable_scope('sentence_lstm') as vs:
+        fw_cell = rnn.BasicLSTMCell(sent_lstm_dim)
+        bw_cell = rnn.BasicLSTMCell(sent_lstm_dim)
+
+        outputs, _ = tf.nn.bidirectional_dynamic_rnn(fw_cell, bw_cell, lstm_input, dtype=tf.float32, scope=vs)
+
+    (fw_outputs, bw_outputs) = outputs
+    lstm_outputs = tf.concat([fw_outputs, bw_outputs], axis=2)
+    return tf.squeeze(lstm_outputs, axis=0)
+
+
 def nn_hidden_layer(input_vec):
-    input_dim = (subword_lstm_dim * 2) + (bigram_lstm_dim * 2)
+    input_dim = (sent_lstm_dim * 2)
     hidden_weights = tf.Variable(tf.truncated_normal([input_dim, hidden_dim], stddev=1.0/sqrt(hidden_dim)),
                                  name='weights/hidden')
     hidden_bias = tf.Variable(tf.zeros([hidden_dim]), name='bias/hidden')
@@ -77,10 +92,10 @@ labels_index = tf.placeholder(tf.int32, [None], name='placeholder/labels')
 
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
 bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
-transition_prob = tf.Variable(tf.zeros([n_class, n_class]), trainable=False, name='transition_prob')
 
 processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
-hidden_output = nn_hidden_layer(processed_input_vec)
+sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
+hidden_output = nn_hidden_layer(sent_input_vec)
 normalized_output_vec, trained_output = nn_output_layer(hidden_output)
 
 loss = nn_calc_loss(trained_output, labels_index)

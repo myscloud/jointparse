@@ -12,6 +12,11 @@ def to_tensor(data):
     return np.array(data)
 
 
+def to_flatten_tensor(data):
+    arr_data = np.array(data)
+    return arr_data.flatten()
+
+
 def map_shuffled_list_back(data_list, shuffle_order):
     original_list = [None] * len(shuffle_order)
     for data, original_idx in zip(data_list, shuffle_order):

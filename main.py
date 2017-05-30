@@ -5,13 +5,15 @@ import sys
 from tools.misc import get_options
 from tools.logger import Logger
 from tools.misc import random_func
-from pos_tag.train import train as pos_train
+# from pos_tag.train import train as pos_train
 from pos_tag.predict import predict as pos_predict
 from pos_tag.evaluate import evaluate_from_file
 from multilang_pos.preprocess import get_log_freq
 from multilang_pos.train import train as multilang_pos_train
 from parse.train import train as parser_train
 from parse.predict import predict_data_set
+from word_seg.preprocess import prepare_transition_prob
+from word_seg.train import train as ws_train
 
 from evaluate.ws_evaluate import evaluate_word_segmentation, evaluate_word_segmentation_coverage
 
@@ -36,6 +38,10 @@ parser.add_argument('--random', action='store_true', dest='is_random',
                     help='Random function, debug mode only :)')
 parser.add_argument('--preprocess_pos', action='store_true', dest='is_pos_preprocess',
                     help='Preprocess necessary data for POS tagging')
+parser.add_argument('--preprocess_ws', action='store_true', dest='is_ws_preprocess',
+                    help='Preprocess necessary data for word segmentation')
+parser.add_argument('--train_ws', action='store_true', dest='is_ws_train',
+                    help='Train word segmentation on training data')
 
 parser_function_map = {
     'is_pos_train': multilang_pos_train,
@@ -46,7 +52,9 @@ parser_function_map = {
     'is_ws_eval_cover': evaluate_word_segmentation_coverage,
     'is_parser_test': predict_data_set,
     'is_random': random_func,
-    'is_pos_preprocess': get_log_freq
+    'is_pos_preprocess': get_log_freq,
+    'is_ws_preprocess': prepare_transition_prob,
+    'is_ws_train': ws_train
 }
 
 

@@ -29,6 +29,22 @@ def read_embedding_map(map_file_path):
     return word_dict, reverse_word_dict
 
 
+def read_bigram_map(map_file_path):
+    bigram_count = 0
+    bigram_dict = dict()
+    reverse_bigram_dict = dict()
+
+    with open(map_file_path) as map_file:
+        for line in map_file:
+            [first_idx, last_idx] = line.strip().split('\t')
+            bigram = (int(first_idx), int(last_idx))
+            bigram_dict[bigram] = bigram_count
+            reverse_bigram_dict[bigram_count] = bigram
+            bigram_count += 1
+
+    return bigram_dict, reverse_bigram_dict
+
+
 def read_action_map(map_file_path):
     action_dict = dict()
     reverse_action_dict = dict()
@@ -61,6 +77,11 @@ class NetworkParams:
             self.set_index_file('pos_map', 'reverse_pos_map', options['pos_map'])
         if 'dep_label' in properties:
             self.set_index_file('dep_label_map', 'reverse_dep_label_map', options['dep_label_map'])
+        if 'subword_bigram' in properties:
+            self.set_bigram_embedding(options['bigram_embedding'], options['bigram_embedding_map'])
+        if 'ws_label' in properties:
+            self.params['ws_label'] = {'B': 0, 'I': 1, 'E': 2, 'S': 3}
+            self.params['reverse_ws_label'] = {0: 'B', 1: 'I', 2: 'E', 3: 'S'}
 
     def set_subword_embedding(self, embedding_file, embedding_map_file):
         self.params['subword_embedding'] = np.load(embedding_file)
@@ -69,6 +90,10 @@ class NetworkParams:
     def set_word_embedding(self, embedding_file, embedding_map_file):
         self.params['word_embedding'] = np.load(embedding_file)
         self.params['word_map'], self.params['reverse_word_map'] = read_embedding_map(embedding_map_file)
+
+    def set_bigram_embedding(self, embedding_file, embedding_map_file):
+        self.params['bigram_embedding'] = np.load(embedding_file)
+        self.params['bigram_map'], self.params['reverse_bigram_map'] = read_bigram_map(embedding_map_file)
 
     def set_index_file(self, label, reverse_label, file_path):
         self.params[label], self.params[reverse_label] = read_index_file(file_path)

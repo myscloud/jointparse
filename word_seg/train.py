@@ -42,19 +42,19 @@ def train(options):
     while True:
         print('epoch', epoch_count)
 
-        # training_feeder.shuffle()
-        # iteration_count = 0
-        # loss_sum = 0
-        # while not training_feeder.is_epoch_end():
-        #     subwords, bigrams, labels = training_feeder.get_next_batch()
-        #     sent_loss = model.train(subwords, bigrams, labels)
-        #     loss_sum += sent_loss
-        #     iteration_count += 1
-        #     if iteration_count % 100 == 0:
-        #         print('iteration: ', iteration_count, ', loss = ', sent_loss)
-        #
-        # epoch_loss = loss_sum / iteration_count
-        # print('epoch loss', epoch_loss)
+        training_feeder.shuffle()
+        iteration_count = 0
+        loss_sum = 0
+        while not training_feeder.is_epoch_end():
+            subwords, bigrams, labels = training_feeder.get_next_batch()
+            sent_loss = model.train(subwords, bigrams, labels)
+            loss_sum += sent_loss
+            iteration_count += 1
+            if iteration_count % 100 == 0:
+                print('iteration: ', iteration_count, ', loss = ', sent_loss)
+
+        epoch_loss = loss_sum / iteration_count
+        print('epoch loss', epoch_loss)
 
         # evaluate
         eval_feeder.reset()

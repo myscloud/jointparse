@@ -92,7 +92,9 @@ input_bigrams = tf.placeholder(tf.int32, [None, None], name='placeholder/bigrams
 labels_index = tf.placeholder(tf.int32, [None], name='placeholder/labels')
 
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
-bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
+# bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
+bigram_embedding = tf.Variable(tf.random_uniform([bigram_vocab_size, embedding_dim], maxval=-0.1, minval=0.1),
+                               name='weights/bigram_embedding')
 
 processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
@@ -118,15 +120,15 @@ class SegmentModel:
 
     def assign_parameters(self, parameters):
         subword_placeholder = tf.placeholder(tf.float32, [subword_vocab_size, embedding_dim], name='subword_emb_pl')
-        bigram_placeholder = tf.placeholder(tf.float32, [bigram_vocab_size, embedding_dim], name='bigram_emb_pl')
+        # bigram_placeholder = tf.placeholder(tf.float32, [bigram_vocab_size, embedding_dim], name='bigram_emb_pl')
         assign_subword = tf.assign(subword_embedding, subword_placeholder)
-        assign_bigram = tf.assign(bigram_embedding, bigram_placeholder)
+        # assign_bigram = tf.assign(bigram_embedding, bigram_placeholder)
 
         feed_dict = {
             subword_placeholder: parameters['subword_embedding'],
-            bigram_placeholder: parameters['bigram_embedding']
+            # bigram_placeholder: parameters['bigram_embedding']
         }
-        self.session.run([assign_subword, assign_bigram], feed_dict=feed_dict)
+        self.session.run(assign_subword, feed_dict=feed_dict)
 
     def train(self, subwords, bigrams, labels):
         feed_dict = SegmentModel.get_feed_dict(subwords, bigrams, labels)

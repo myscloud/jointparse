@@ -34,6 +34,7 @@ def train(options):
 
     # start training
     model = SegmentModel(transition_prob, parameters=parameters)
+    # model = SegmentModel(transition_prob, model_path=options['ws_model_load_path'])
     epoch_count = 0
     score_list = list()
     max_score = 0
@@ -73,12 +74,14 @@ def train(options):
             eval_sent_count += 1
 
         epoch_eval = evaluate_epoch(evaluation_list)[0]
+        tagged_eval = evaluate_epoch(evaluation_list)[1]
         write_log(options['ws_log_dir'], epoch_eval, epoch_count)
 
         f1_score = epoch_eval['f1_score']
         tag_acc = epoch_eval['tag_accuracy']
         print('tagging accuracy', tag_acc)
         print('f1 score', f1_score)
+        print('debug: ', tagged_eval['tag_accuracy'], tagged_eval['f1_score'])
         print('---------------------------------------')
         score_list.append(f1_score)
         average_score = sum(score_list) / len(score_list)

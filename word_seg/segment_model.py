@@ -138,9 +138,11 @@ class SegmentModel:
 
         decoded_sequences = decode(predicted_scores, self.trans_prob, no_output)
         sequences_only = [x[1] for x in decoded_sequences]
-        return sequences_only
+        best_tag_score = decode_tmp(predicted_scores)
+        return sequences_only + [best_tag_score]
 
     def save_model(self, save_path, global_step):
+        print('Model for epoch', global_step, 'is saved.')
         saver.save(self.session, save_path, global_step=global_step)
 
     @staticmethod
@@ -165,6 +167,16 @@ def calc_sent_loss(gold_labels, predicted_scores, trans_prob):
     margin_loss = calc_margin_loss(gold_labels, predicted_labels)
     sent_loss = predicted_score + margin_loss - gold_score
     return max(0, sent_loss)
+
+
+def decode_tmp(predicted_scores):
+    answer = list()
+    from numpy import argmax
+    for char_count in range(len(predicted_scores)):
+        max_idx = argmax(predicted_scores[char_count])
+        answer.append(max_idx)
+
+    return answer
 
 
 def decode(predicted_scores, trans_prob, max_ans):

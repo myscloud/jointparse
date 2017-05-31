@@ -20,7 +20,7 @@ subword_vocab_size = 100004
 bigram_vocab_size = 60436
 embedding_dim = 64
 
-n_kept_model = 3
+n_kept_model = 1
 n_class = 4
 
 
@@ -93,9 +93,9 @@ input_bigrams = tf.placeholder(tf.int32, [None, None], name='placeholder/bigrams
 labels_index = tf.placeholder(tf.int32, [None], name='placeholder/labels')
 
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
-# bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
-bigram_embedding = tf.Variable(tf.random_uniform([bigram_vocab_size, embedding_dim], maxval=-0.1, minval=0.1),
-                               name='weights/bigram_embedding')
+bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
+# bigram_embedding = tf.Variable(tf.random_uniform([bigram_vocab_size, embedding_dim], maxval=-0.1, minval=0.1),
+#                                name='weights/bigram_embedding')
 
 processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)

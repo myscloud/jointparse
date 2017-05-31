@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="f876e7c3-957b-4441-a97a-a2403f2b58e5" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/options.config" afterPath="$PROJECT_DIR$/options.config" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/word_seg/segment_model.py" afterPath="$PROJECT_DIR$/word_seg/segment_model.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -44,8 +43,8 @@
       <file leaf-file-name="segment_model.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/word_seg/segment_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1445">
-              <caret line="139" column="79" lean-forward="false" selection-start-line="139" selection-start-column="79" selection-end-line="139" selection-end-column="79" />
+            <state relative-caret-position="136">
+              <caret line="44" column="24" lean-forward="false" selection-start-line="44" selection-start-column="24" selection-end-line="44" selection-end-column="24" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -183,8 +182,8 @@
         <option value="$PROJECT_DIR$/word_seg/data_prep.py" />
         <option value="$PROJECT_DIR$/word_seg/evaluate.py" />
         <option value="$PROJECT_DIR$/word_seg/train.py" />
-        <option value="$PROJECT_DIR$/word_seg/segment_model.py" />
         <option value="$PROJECT_DIR$/options.config" />
+        <option value="$PROJECT_DIR$/word_seg/segment_model.py" />
       </list>
     </option>
   </component>
@@ -594,28 +593,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/multilang_pos/parser_model.py" />
-    <entry file="file://$PROJECT_DIR$/multilang_pos/preprocess.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="16" column="47" lean-forward="false" selection-start-line="16" selection-start-column="47" selection-end-line="16" selection-end-column="47" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pos_tag/train.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1632">
-          <caret line="121" column="20" lean-forward="false" selection-start-line="121" selection-start-column="20" selection-end-line="121" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/parse/train.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="561">
-          <caret line="94" column="19" lean-forward="true" selection-start-line="94" selection-start-column="19" selection-end-line="94" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/data/params/pos">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -800,20 +777,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch0">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch1">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch2">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -925,13 +888,51 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/word_seg/train.py">
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model03/model01/epoch0">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="952">
-          <caret line="56" column="34" lean-forward="false" selection-start-line="56" selection-start-column="34" selection-end-line="56" selection-end-column="34" />
-          <folding>
-            <element signature="e#0#68#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch0">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch1">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch12">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch10">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/ws/model02/model01/epoch11">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -943,10 +944,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/word_seg/train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="952">
+          <caret line="56" column="34" lean-forward="false" selection-start-line="56" selection-start-column="34" selection-end-line="56" selection-end-column="34" />
+          <folding>
+            <element signature="e#0#68#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/word_seg/segment_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1445">
-          <caret line="139" column="79" lean-forward="false" selection-start-line="139" selection-start-column="79" selection-end-line="139" selection-end-column="79" />
+        <state relative-caret-position="136">
+          <caret line="44" column="24" lean-forward="false" selection-start-line="44" selection-start-column="24" selection-end-line="44" selection-end-column="24" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

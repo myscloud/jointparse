@@ -42,19 +42,19 @@ def train(options):
     while True:
         print('epoch', epoch_count)
 
-        training_feeder.shuffle()
-        iteration_count = 0
-        loss_sum = 0
-        while not training_feeder.is_epoch_end():
-            subwords, bigrams, labels = training_feeder.get_next_batch()
-            sent_loss = model.train(subwords, bigrams, labels)
-            loss_sum += sent_loss
-            iteration_count += 1
-            if iteration_count % 100 == 0:
-                print('iteration: ', iteration_count, ', loss = ', sent_loss)
-
-        epoch_loss = loss_sum / iteration_count
-        print('epoch loss', epoch_loss)
+        # training_feeder.shuffle()
+        # iteration_count = 0
+        # loss_sum = 0
+        # while not training_feeder.is_epoch_end():
+        #     subwords, bigrams, labels = training_feeder.get_next_batch()
+        #     sent_loss = model.train(subwords, bigrams, labels)
+        #     loss_sum += sent_loss
+        #     iteration_count += 1
+        #     if iteration_count % 100 == 0:
+        #         print('iteration: ', iteration_count, ', loss = ', sent_loss)
+        #
+        # epoch_loss = loss_sum / iteration_count
+        # print('epoch loss', epoch_loss)
 
         # evaluate
         eval_feeder.reset()
@@ -74,15 +74,12 @@ def train(options):
             eval_sent_count += 1
 
         epoch_eval = evaluate_epoch(evaluation_list)[0]
-        tagged_eval = evaluate_epoch(evaluation_list)[1]
         write_log(options['ws_log_dir'], epoch_eval, epoch_count)
 
         f1_score = epoch_eval['f1_score']
         tag_acc = epoch_eval['tag_accuracy']
         print('tagging accuracy', tag_acc)
         print('f1 score', f1_score)
-        print('debug: ', tagged_eval['tag_accuracy'], tagged_eval['f1_score'])
-        print('---------------------------------------')
         score_list.append(f1_score)
         average_score = sum(score_list) / len(score_list)
 
@@ -94,3 +91,4 @@ def train(options):
             break
 
         epoch_count += 1
+        print('---------------------------------------')

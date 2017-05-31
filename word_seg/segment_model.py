@@ -38,11 +38,11 @@ def nn_bilstm_input(input_data, scope_name, lstm_dim):
 
 def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
     mapped_subwords = tf.nn.embedding_lookup(subword_emb, subwords)
-    mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
+    # mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
     subword_output = nn_bilstm_input(mapped_subwords, 'subword_lstm', subword_lstm_dim)
-    bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
-    concat_output = tf.concat([subword_output, bigram_output], axis=1)
-    return concat_output
+    # bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
+    # concat_output = tf.concat([subword_output, bigram_output], axis=1)
+    return subword_output
 
 
 def nn_lstm_sentence_layer(input_vec):
@@ -81,9 +81,10 @@ def nn_output_layer(hidden_vec):
 def nn_calc_loss(predicted_output, labels):
     mapped_labels = tf.one_hot(labels, n_class, on_value=1.0, off_value=0.0, axis=-1)
     ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=predicted_output, labels=mapped_labels))
-    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
-    l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
-    all_loss = ce_loss + l2_score
+    # all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    # l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    # all_loss = ce_loss + l2_score
+    all_loss = ce_loss
     return all_loss
 
 input_subwords = tf.placeholder(tf.int32, [None, None], name='placeholder/subwords')

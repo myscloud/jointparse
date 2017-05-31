@@ -38,10 +38,11 @@ def nn_bilstm_input(input_data, scope_name, lstm_dim):
 
 def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
     mapped_subwords = tf.nn.embedding_lookup(subword_emb, subwords)
-    mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
+    # mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
     subword_output = nn_bilstm_input(mapped_subwords, 'subword_lstm', subword_lstm_dim)
-    bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
-    concat_output = tf.concat([subword_output, bigram_output], axis=1)
+    subword_itself = mapped_subwords[:, 0]
+    # bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
+    concat_output = tf.concat([subword_output, subword_itself], axis=1)
     return concat_output
 
 

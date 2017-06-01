@@ -5,12 +5,13 @@ import tools.data_transform as data_trans
 
 def get_input_batch(data_file, subword_data_file, network_params, options):
     exp_data = ExperimentData(data_file, subword_data_file)
-    subwords, labels, bigrams = prepare_input(exp_data, network_params, options)
+    subwords, labels, bigrams, second_labels = prepare_input(exp_data, network_params, options)
 
     data_list = [
         {'data': subwords, 'pad_element': None, 'post_func': data_trans.to_matrix},
         {'data': bigrams, 'pad_element': None, 'post_func': data_trans.to_matrix},
         {'data': labels, 'pad_element': None, 'post_func': data_trans.to_flatten_tensor},
+        {'data': second_labels, 'pad_element': None, 'post_func': data_trans.to_flatten_tensor}
     ]
     data_feeder = BatchReader(data_list, 1)
     return data_feeder, exp_data
@@ -23,11 +24,13 @@ def prepare_input(exp_data, network_params, options):
 
     subwords = list()
     labels = list()
+    all_second_labels = list()
     bigrams = list()
 
     for sentence in exp_data.subword:
         sent_subwords, sent_labels = get_labels(sentence)
         mapped_labels = network_params.map_list_with_params(sent_labels, 'ws_label')
+        second_labels = get_second_labels(mapped_labels, 2, 2)
         mapped_subwords = network_params.map_list_with_params(sent_subwords, 'subword_map', unk_name='<UNK>')
         subword_windows = get_context_windows(mapped_subwords, options['no_context_left'], options['no_context_right'],
                                               left_pad, right_pad)
@@ -35,9 +38,10 @@ def prepare_input(exp_data, network_params, options):
 
         subwords.append(subword_windows)
         labels.append(mapped_labels)
+        all_second_labels.append(second_labels)
         bigrams.append(bigram_windows)
 
-    return subwords, labels, bigrams
+    return subwords, labels, bigrams, all_second_labels
 
 
 def get_labels(sentence):
@@ -61,6 +65,22 @@ def get_labels(sentence):
             label_list.append('E')
 
     return subword_list, label_list
+
+
+def get_second_labels(labels, n_left, n_right):
+    padded_labels = ([3] * n_left) + labels + ([3] * n_right)
+    second_labels = list()
+    for label_idx in range(n_left, len(padded_labels)-n_right):
+        labels_window = padded_labels[label_idx-n_left:label_idx+n_right+1]
+        label_sum = 0
+        for i in range(1, len(labels_window)):
+            label_sum *= 2
+            if labels_window[i-1] < labels_window[i] != 3:
+                label_sum += 1
+
+        second_labels.append(label_sum)
+
+    return second_labels
 
 
 def get_context_windows(sentence, n_left, n_right, left_pad, right_pad):

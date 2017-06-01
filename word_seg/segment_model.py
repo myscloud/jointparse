@@ -6,10 +6,10 @@ from word_seg.custom_heap import CustomHeap
 
 # parameters
 learning_rate = 0.05
-beam_size = 10
+beam_size = 20
 margin_loss_discount = 0.2
 dropout_rate = 0.4
-l2_lambda = 10e-4
+l2_lambda = 10e-8
 
 subword_lstm_dim = 100
 bigram_lstm_dim = 100
@@ -22,6 +22,7 @@ embedding_dim = 64
 
 n_kept_model = 3
 n_class = 4
+n_second_labels_class = 16
 
 
 def nn_bilstm_input(input_data, scope_name, lstm_dim):
@@ -75,21 +76,29 @@ def nn_output_layer(hidden_vec):
     output = tf.matmul(hidden_vec, output_weights) + output_bias
     dropped_output = tf.matmul(dropped_hidden_vec, output_weights) + output_bias
     normalized_output = tf.nn.softmax(output)
-    return normalized_output, dropped_output
+
+    out_second_weights = tf.Variable(tf.truncated_normal([hidden_dim, n_second_labels_class],
+                                                         stddev=1/sqrt(n_second_labels_class)), name='weights/output2')
+    out_second_bias = tf.Variable(tf.zeros([n_second_labels_class]), name='bias/output2')
+    dropped_second_output = tf.matmul(dropped_hidden_vec, out_second_weights) + out_second_bias
+    return normalized_output, dropped_output, dropped_second_output
 
 
-def nn_calc_loss(predicted_output, labels):
+def nn_calc_loss(predicted_output, predicted_second_output, labels, second_labels):
     mapped_labels = tf.one_hot(labels, n_class, on_value=1.0, off_value=0.0, axis=-1)
+    mapped_second_labels = tf.one_hot(second_labels, n_second_labels_class, on_value=1.0, off_value=0.0, axis=-1)
     ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=predicted_output, labels=mapped_labels))
-    # all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
-    # l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
-    # all_loss = ce_loss + l2_score
-    all_loss = ce_loss
+    ce_second_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits
+                                    (logits=predicted_second_output, labels=mapped_second_labels))
+    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    all_loss = ce_loss + ce_second_loss + l2_score
     return all_loss
 
 input_subwords = tf.placeholder(tf.int32, [None, None], name='placeholder/subwords')
 input_bigrams = tf.placeholder(tf.int32, [None, None], name='placeholder/bigrams')
 labels_index = tf.placeholder(tf.int32, [None], name='placeholder/labels')
+second_labels_index = tf.placeholder(tf.int32, [None], name='placeholder/second_labels')
 
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
 bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
@@ -97,9 +106,9 @@ bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), nam
 processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
 hidden_output = nn_hidden_layer(sent_input_vec)
-normalized_output_vec, trained_output = nn_output_layer(hidden_output)
+normalized_output_vec, trained_output, trained_second_output = nn_output_layer(hidden_output)
 
-loss = nn_calc_loss(trained_output, labels_index)
+loss = nn_calc_loss(trained_output, trained_second_output, labels_index, second_labels_index)
 optimize = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
 
 init = tf.global_variables_initializer()
@@ -128,8 +137,8 @@ class SegmentModel:
         }
         self.session.run([assign_subword, assign_bigram], feed_dict=feed_dict)
 
-    def train(self, subwords, bigrams, labels):
-        feed_dict = SegmentModel.get_feed_dict(subwords, bigrams, labels)
+    def train(self, subwords, bigrams, labels, second_labels):
+        feed_dict = SegmentModel.get_feed_dict(subwords, bigrams, [labels, second_labels])
         _, sent_loss = self.session.run([optimize, loss], feed_dict=feed_dict)
         return sent_loss
 
@@ -152,7 +161,10 @@ class SegmentModel:
             input_bigrams: bigrams
         }
         if labels is not None:
-            feed_dict[labels_index] = labels
+            class_labels, second_labels = labels
+            feed_dict[labels_index] = class_labels
+            feed_dict[second_labels_index] = second_labels
+
         return feed_dict
 
 # ------------------------------------------------------------------------------------
@@ -193,7 +205,6 @@ def calc_sent_loss(gold_labels, predicted_scores, trans_prob):
 
 def decode(predicted_scores, trans_prob, max_ans):
     beam_queue = CustomHeap(max_size=beam_size)
-    x = [[0 for _ in range(4)] for _ in range(4)]
 
     # initialize
     for tag_idx in range(n_class):
@@ -207,11 +218,38 @@ def decode(predicted_scores, trans_prob, max_ans):
         for (prev_score, item) in prev_items:
             last_tag = item[-1]
             for new_tag in range(n_class):
-                new_score = prev_score + (trans_prob[last_tag][new_tag] * predicted_scores[char_count][new_tag])
+                new_score = prev_score + (trans_prob[last_tag][new_tag] + predicted_scores[char_count][new_tag])
                 beam_queue.add((new_score, item + [new_tag]))
 
     sorted_answer = beam_queue.get_items_with_score()
-    return sorted_answer[:max_ans]
+    return get_unique_sequence(sorted_answer, max_ans)
+    # return sorted_answer[:max_ans]
+
+
+def get_unique_sequence(candidates, max_ans):
+    sequence_set = set()
+    x = [[0 for _ in range(4)] for _ in range(4)]  # x is a map from BIES tag to CS (concat/separate) tag
+    x[0][1] = x[0][2] = x[1][1] = x[1][2] = 1
+    unique_answers = list()
+
+    for score, sequence in candidates:
+        cs_sequence = [0]
+        for label_idx, label in enumerate(sequence[1:]):
+            last_label = sequence[label_idx]
+            cs_tag = x[last_label][label]
+            cs_sequence.append(cs_tag)
+
+        cs_seq_tuple = tuple(cs_sequence)
+        if cs_seq_tuple not in sequence_set:
+            sequence_set.add(cs_seq_tuple)
+            unique_answers.append((score, sequence))
+
+        if len(unique_answers) == max_ans:
+            return unique_answers
+
+    n_remaining_answer = max_ans - len(unique_answers)
+    unique_answers += ([unique_answers[-1]] * n_remaining_answer)
+    return unique_answers
 
 
 def calc_gold_label_score(gold_label, predicted_scores, trans_prob):

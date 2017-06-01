@@ -28,7 +28,7 @@ def train(options):
     # for evaluation
     eval_label_list = list()
     while not eval_feeder.is_epoch_end():
-        _, _, labels = eval_feeder.get_next_batch()
+        _, _, labels, _ = eval_feeder.get_next_batch()
         head_end_list, word_count = get_head_end_list(labels)
         eval_label_list.append((labels, head_end_list, word_count))
 
@@ -46,8 +46,8 @@ def train(options):
         iteration_count = 0
         loss_sum = 0
         while not training_feeder.is_epoch_end():
-            subwords, bigrams, labels = training_feeder.get_next_batch()
-            sent_loss = model.train(subwords, bigrams, labels)
+            subwords, bigrams, labels, second_labels = training_feeder.get_next_batch()
+            sent_loss = model.train(subwords, bigrams, labels, second_labels)
             loss_sum += sent_loss
             iteration_count += 1
             if iteration_count % 100 == 0:
@@ -61,7 +61,7 @@ def train(options):
         eval_sent_count = 0
         evaluation_list = list()
         while not eval_feeder.is_epoch_end():
-            subwords, bigrams, _ = eval_feeder.get_next_batch()
+            subwords, bigrams, _, _ = eval_feeder.get_next_batch()
             possible_outputs = model.predict(subwords, bigrams, 1)
             (gold_labels, gold_he_list, gold_word_count) = eval_label_list[eval_sent_count]
 
@@ -88,6 +88,7 @@ def train(options):
             model.save_model(options['ws_model_save_path'], epoch_count)
 
         if f1_score < average_score and epoch_count > 20:
+            print('Training completed.')
             break
 
         epoch_count += 1

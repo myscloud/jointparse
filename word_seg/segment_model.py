@@ -5,16 +5,14 @@ from math import sqrt
 from word_seg.custom_heap import CustomHeap
 
 # parameters
-learning_rate = 0.01
+learning_rate = 0.05
 beam_size = 10
 margin_loss_discount = 0.2
-dropout_rate = 0.2
-l2_lambda = 10e-8
+dropout_rate = 0.4
+l2_lambda = 10e-4
 
 subword_lstm_dim = 100
 bigram_lstm_dim = 100
-input_1_dim = 100
-input_2_dim = 100
 sent_lstm_dim = 200
 hidden_dim = 150
 
@@ -22,7 +20,7 @@ subword_vocab_size = 100004
 bigram_vocab_size = 60436
 embedding_dim = 64
 
-n_kept_model = 1
+n_kept_model = 3
 n_class = 4
 
 
@@ -38,20 +36,13 @@ def nn_bilstm_input(input_data, scope_name, lstm_dim):
     return bilstm_output
 
 
-def nn_input_layer(subwords, subword_emb):
+def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
     mapped_subwords = tf.nn.embedding_lookup(subword_emb, subwords)
+    # mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
     subword_output = nn_bilstm_input(mapped_subwords, 'subword_lstm', subword_lstm_dim)
-    subword_itself = mapped_subwords[:, 0]
-    input_weights_1 = tf.Variable(tf.truncated_normal([subword_lstm_dim*2, input_1_dim], stddev=1.0/sqrt(input_1_dim)),
-                                  name='weights/input_1')
-    input_bias_1 = tf.Variable(tf.zeros([input_1_dim]), name='bias/input_1')
-    input_weights_2 = tf.Variable(tf.truncated_normal([embedding_dim, input_2_dim], stddev=1.0/sqrt(input_2_dim)),
-                                  name='bias_input_2')
-    input_bias_2 = tf.Variable(tf.zeros([input_2_dim]), name='bias/input_2')
-
-    processed_input = tf.concat([tf.nn.relu(tf.matmul(subword_output, input_weights_1) + input_bias_1),
-                                 tf.nn.relu(tf.matmul(subword_itself, input_weights_2) + input_bias_2)], axis=1)
-    return processed_input
+    # bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
+    # concat_output = tf.concat([subword_output, bigram_output], axis=1)
+    return subword_output
 
 
 def nn_lstm_sentence_layer(input_vec):
@@ -73,7 +64,7 @@ def nn_hidden_layer(input_vec):
     hidden_weights = tf.Variable(tf.truncated_normal([input_dim, hidden_dim], stddev=1.0/sqrt(hidden_dim)),
                                  name='weights/hidden')
     hidden_bias = tf.Variable(tf.zeros([hidden_dim]), name='bias/hidden')
-    return tf.nn.relu(tf.matmul(input_vec, hidden_weights) + hidden_bias)
+    return tf.nn.tanh(tf.matmul(input_vec, hidden_weights) + hidden_bias)
 
 
 def nn_output_layer(hidden_vec):
@@ -90,10 +81,10 @@ def nn_output_layer(hidden_vec):
 def nn_calc_loss(predicted_output, labels):
     mapped_labels = tf.one_hot(labels, n_class, on_value=1.0, off_value=0.0, axis=-1)
     ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=predicted_output, labels=mapped_labels))
-    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
-    l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
-    all_loss = ce_loss + l2_score
-    # all_loss = ce_loss
+    # all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    # l2_score = l2_lambda * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    # all_loss = ce_loss + l2_score
+    all_loss = ce_loss
     return all_loss
 
 input_subwords = tf.placeholder(tf.int32, [None, None], name='placeholder/subwords')
@@ -102,10 +93,8 @@ labels_index = tf.placeholder(tf.int32, [None], name='placeholder/labels')
 
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
 bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
-# bigram_embedding = tf.Variable(tf.random_uniform([bigram_vocab_size, embedding_dim], maxval=-0.1, minval=0.1),
-#                                name='weights/bigram_embedding')
 
-processed_input_vec = nn_input_layer(input_subwords, subword_embedding)
+processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
 hidden_output = nn_hidden_layer(sent_input_vec)
 normalized_output_vec, trained_output = nn_output_layer(hidden_output)
@@ -129,15 +118,15 @@ class SegmentModel:
 
     def assign_parameters(self, parameters):
         subword_placeholder = tf.placeholder(tf.float32, [subword_vocab_size, embedding_dim], name='subword_emb_pl')
-        # bigram_placeholder = tf.placeholder(tf.float32, [bigram_vocab_size, embedding_dim], name='bigram_emb_pl')
+        bigram_placeholder = tf.placeholder(tf.float32, [bigram_vocab_size, embedding_dim], name='bigram_emb_pl')
         assign_subword = tf.assign(subword_embedding, subword_placeholder)
-        # assign_bigram = tf.assign(bigram_embedding, bigram_placeholder)
+        assign_bigram = tf.assign(bigram_embedding, bigram_placeholder)
 
         feed_dict = {
             subword_placeholder: parameters['subword_embedding'],
-            # bigram_placeholder: parameters['bigram_embedding']
+            bigram_placeholder: parameters['bigram_embedding']
         }
-        self.session.run(assign_subword, feed_dict=feed_dict)
+        self.session.run([assign_subword, assign_bigram], feed_dict=feed_dict)
 
     def train(self, subwords, bigrams, labels):
         feed_dict = SegmentModel.get_feed_dict(subwords, bigrams, labels)
@@ -180,8 +169,31 @@ def calc_sent_loss(gold_labels, predicted_scores, trans_prob):
     return max(0, sent_loss)
 
 
+# def old_decode(predicted_scores, trans_prob, max_ans):
+#     beam_queue = CustomHeap(max_size=beam_size)
+#
+#     # initialize
+#     for tag_idx in range(n_class):
+#         score = predicted_scores[0][tag_idx]
+#         beam_queue.add((score, [tag_idx]))
+#
+#     for char_count in range(1, len(predicted_scores)):
+#         prev_items = beam_queue.get_items_with_score()
+#         beam_queue = CustomHeap(max_size=beam_size)
+#
+#         for (prev_score, item) in prev_items:
+#             last_tag = item[-1]
+#             for new_tag in range(n_class):
+#                 new_score = prev_score + (trans_prob[last_tag][new_tag] + predicted_scores[char_count][new_tag])
+#                 beam_queue.add((new_score, item + [new_tag]))
+#
+#     sorted_answer = beam_queue.get_items_with_score()
+#     return sorted_answer[:max_ans]
+
+
 def decode(predicted_scores, trans_prob, max_ans):
     beam_queue = CustomHeap(max_size=beam_size)
+    x = [[0 for _ in range(4)] for _ in range(4)]
 
     # initialize
     for tag_idx in range(n_class):
@@ -195,7 +207,7 @@ def decode(predicted_scores, trans_prob, max_ans):
         for (prev_score, item) in prev_items:
             last_tag = item[-1]
             for new_tag in range(n_class):
-                new_score = prev_score + (trans_prob[last_tag][new_tag] + predicted_scores[char_count][new_tag])
+                new_score = prev_score + (trans_prob[last_tag][new_tag] * predicted_scores[char_count][new_tag])
                 beam_queue.add((new_score, item + [new_tag]))
 
     sorted_answer = beam_queue.get_items_with_score()
@@ -218,5 +230,3 @@ def calc_margin_loss(gold_labels, predicted_labels):
         correct_count += 1 if (predict == gold) else 0
 
     return margin_loss_discount * correct_count
-
-

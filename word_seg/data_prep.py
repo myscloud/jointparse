@@ -110,11 +110,13 @@ def read_transition_prob(transition_file_path):
 
 
 def write_results(output_file_path, subwords, labels):
+    label_map = ['B', 'I', 'E', 'S']
     with open(output_file_path, 'w') as out_file:
         for sent_subwords, candidates in zip(subwords, labels):
             for candidate_labels in candidates:
                 segmented_words = get_segmented_words_from_labels(sent_subwords, candidate_labels)
                 out_file.write(' '.join(segmented_words) + '\n')
+                out_file.write(' '.join([label_map[label] for label in candidate_labels]) + '\n')
 
 
 def get_segmented_words_from_labels(subwords, labels):
@@ -122,11 +124,16 @@ def get_segmented_words_from_labels(subwords, labels):
     curr_word = ''
     for subword, label in zip(subwords, labels):
         if label == 0 or label == 3:  # B or S
+            if curr_word != '':
+                words.append(curr_word)
             curr_word = subword
         else:
             curr_word += subword
 
         if label == 2 or label == 3:  # E or S
             words.append(curr_word)
+            curr_word = ''
 
+    if curr_word != '':
+        words.append(curr_word)
     return words

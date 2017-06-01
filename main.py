@@ -14,6 +14,7 @@ from parse.train import train as parser_train
 from parse.predict import predict_data_set
 from word_seg.preprocess import prepare_transition_prob
 from word_seg.train import train as ws_train
+from word_seg.predict import predict as ws_predict
 
 from evaluate.ws_evaluate import evaluate_word_segmentation, evaluate_word_segmentation_coverage
 
@@ -42,6 +43,8 @@ parser.add_argument('--preprocess_ws', action='store_true', dest='is_ws_preproce
                     help='Preprocess necessary data for word segmentation')
 parser.add_argument('--train_ws', action='store_true', dest='is_ws_train',
                     help='Train word segmentation on training data')
+parser.add_argument('--predict_ws', action='store_true', dest='is_ws_predict',
+                    help='Predict word segmentation results and output first k output')
 
 parser_function_map = {
     'is_pos_train': multilang_pos_train,
@@ -54,7 +57,8 @@ parser_function_map = {
     'is_random': random_func,
     'is_pos_preprocess': get_log_freq,
     'is_ws_preprocess': prepare_transition_prob,
-    'is_ws_train': ws_train
+    'is_ws_train': ws_train,
+    'is_ws_predict': ws_predict
 }
 
 

@@ -13,6 +13,8 @@ l2_lambda = 10e-8
 
 subword_lstm_dim = 100
 bigram_lstm_dim = 100
+input_1_dim = 100
+input_2_dim = 100
 sent_lstm_dim = 200
 hidden_dim = 150
 
@@ -36,14 +38,20 @@ def nn_bilstm_input(input_data, scope_name, lstm_dim):
     return bilstm_output
 
 
-def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
+def nn_input_layer(subwords, subword_emb):
     mapped_subwords = tf.nn.embedding_lookup(subword_emb, subwords)
-    # mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
     subword_output = nn_bilstm_input(mapped_subwords, 'subword_lstm', subword_lstm_dim)
-    # bigram_itself = mapped_bigrams[:, 0]
-    # bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
-    # concat_output = tf.concat([subword_output, bigram_itself], axis=1)
-    return subword_output
+    subword_itself = mapped_subwords[:, 0]
+    input_weights_1 = tf.Variable(tf.truncated_normal([subword_lstm_dim*2, input_1_dim], stddev=1.0/sqrt(input_1_dim)),
+                                  name='weights/input_1')
+    input_bias_1 = tf.Variable(tf.zeros([input_1_dim]), name='bias/input_1')
+    input_weights_2 = tf.Variable(tf.truncated_normal([embedding_dim, input_2_dim], stddev=1.0/sqrt(input_2_dim)),
+                                  name='bias_input_2')
+    input_bias_2 = tf.Variable(tf.zeros([input_2_dim]), name='bias/input_2')
+
+    processed_input = tf.concat([tf.nn.relu(tf.matmul(subword_output, input_weights_1) + input_bias_1),
+                                 tf.nn.relu(tf.matmul(subword_itself, input_weights_2) + input_bias_2)], axis=1)
+    return processed_input
 
 
 def nn_lstm_sentence_layer(input_vec):
@@ -65,7 +73,7 @@ def nn_hidden_layer(input_vec):
     hidden_weights = tf.Variable(tf.truncated_normal([input_dim, hidden_dim], stddev=1.0/sqrt(hidden_dim)),
                                  name='weights/hidden')
     hidden_bias = tf.Variable(tf.zeros([hidden_dim]), name='bias/hidden')
-    return tf.nn.tanh(tf.matmul(input_vec, hidden_weights) + hidden_bias)
+    return tf.nn.relu(tf.matmul(input_vec, hidden_weights) + hidden_bias)
 
 
 def nn_output_layer(hidden_vec):
@@ -97,7 +105,7 @@ bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), nam
 # bigram_embedding = tf.Variable(tf.random_uniform([bigram_vocab_size, embedding_dim], maxval=-0.1, minval=0.1),
 #                                name='weights/bigram_embedding')
 
-processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
+processed_input_vec = nn_input_layer(input_subwords, subword_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
 hidden_output = nn_hidden_layer(sent_input_vec)
 normalized_output_vec, trained_output = nn_output_layer(hidden_output)

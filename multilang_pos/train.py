@@ -24,7 +24,8 @@ def train(options):
     training_feeder = get_input_batch(data_set['training'], 1)
     eval_feeder = get_input_batch(data_set['eval'], 1)
 
-    model = TaggerModel()
+    embeddings = [network_params.params['word_embedding'], network_params.params['subword_embedding']]
+    model = TaggerModel(embeddings=embeddings)
     epoch_count = 0
     max_eval_acc = 0
     accuracy_list = list()

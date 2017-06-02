@@ -136,7 +136,6 @@ def write_results(output_file_path, subwords, labels):
             for candidate_labels in candidates:
                 segmented_words = get_segmented_words_from_labels(sent_subwords, candidate_labels)
                 out_file.write(' '.join(segmented_words) + '\n')
-                out_file.write(' '.join([label_map[label] for label in candidate_labels]) + '\n')
 
 
 def get_segmented_words_from_labels(subwords, labels):

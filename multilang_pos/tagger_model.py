@@ -10,8 +10,8 @@ regularize_beta = 10e-8
 
 word_vocab_size = 100004
 subword_vocab_size = 100004
-word_embedding_dim = 128
-subword_embedding_dim = 100
+word_embedding_dim = 64
+subword_embedding_dim = 64
 
 input_subword_dim = 100
 input_dim = 100
@@ -34,11 +34,14 @@ label = dict()
 label['tag'] = tf.placeholder(tf.int32, [None], name='label_tags')
 label['word_freq'] = tf.placeholder(tf.int32, [None], name='label_word_freq')
 
+word_embedding = tf.Variable(tf.zeros([word_vocab_size, word_embedding_dim]), trainable=False, name='word_emb')
+subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, subword_embedding_dim]), trainable=False, name='sw_emb')
+
 
 def nn_run_subword_processing(subwords):
     with tf.variable_scope('subword_lstm'):
-        subword_embedding = tf.Variable(tf.random_uniform([subword_vocab_size, subword_embedding_dim],
-                                                          minval=-0.1, maxval=0.1), name='weights/subword_embedding')
+        # subword_embedding = tf.Variable(tf.random_uniform([subword_vocab_size, subword_embedding_dim],
+        #                                                   minval=-0.1, maxval=0.1), name='weights/subword_embedding')
         mapped_subwords = tf.nn.embedding_lookup(subword_embedding, subwords)
         lstm_fw_cell = rnn.BasicLSTMCell(input_subword_dim)
         lstm_bw_cell = rnn.BasicLSTMCell(input_subword_dim)
@@ -49,8 +52,8 @@ def nn_run_subword_processing(subwords):
 
 
 def nn_run_input_layer(input_dict):
-    word_embedding = tf.Variable(tf.random_uniform([word_vocab_size, word_embedding_dim],
-                                                   minval=-0.1, maxval=0.1), name='weights/word_embedding')
+    # word_embedding = tf.Variable(tf.random_uniform([word_vocab_size, word_embedding_dim],
+    #                                                minval=-0.1, maxval=0.1), name='weights/word_embedding')
     mapped_words = tf.nn.embedding_lookup(word_embedding, input_dict['words'])
     subword_vec = nn_run_subword_processing(input_dict['subwords'])
     expanded_subword_vec = tf.expand_dims(subword_vec, 0)
@@ -122,12 +125,13 @@ saver = tf.train.Saver(max_to_keep=n_saved_models)
 
 
 class TaggerModel:
-    def __init__(self, model_path=None):
+    def __init__(self, embeddings=None, model_path=None):
         self.session = tf.Session()
         if model_path is not None:
             saver.restore(self.session, model_path)
         else:
             self.session.run(init)
+            self.initial_embedding(embeddings[0], embeddings[1])
 
     def train(self, input_list, labels):
         feed_dict = TaggerModel.get_feed_dict(input_list, labels)
@@ -141,6 +145,19 @@ class TaggerModel:
 
     def save_model(self, save_path, global_step):
         saver.save(self.session,save_path, global_step=global_step)
+
+    def initial_embedding(self, word_emb_input, subword_emb_input):
+        word_emb_placeholder = tf.placeholder(tf.float32, [word_vocab_size, word_embedding_dim], name='word_pl')
+        subword_emb_placeholder = tf.placeholder(tf.float32, [subword_vocab_size, subword_embedding_dim], name='sw_pl')
+        word_assign = tf.assign(word_embedding, word_emb_placeholder)
+        subword_assign = tf.assign(subword_embedding, subword_emb_placeholder)
+
+        feed_dict = {
+            word_emb_placeholder: word_emb_input,
+            subword_emb_placeholder: subword_emb_input
+        }
+        self.session.run([word_assign, subword_assign], feed_dict=feed_dict)
+
 
     @staticmethod
     def get_feed_dict(input_list, labels=None):

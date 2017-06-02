@@ -5,8 +5,7 @@ from word_seg.evaluate import evaluate_sentence, evaluate_epoch, get_head_end_li
 
 
 def predict(options):
-    data_file_type = ['test']
-    # data_file_type = ['training', 'eval', 'dev', 'test']
+    data_file_type = ['training', 'eval', 'dev', 'test']
     data_file_dict = {
         'training': (options['train_file_path'], options['train_subword_file_path']),
         'eval': (options['eval_file_path'], options['eval_subword_file_path']),
@@ -31,7 +30,7 @@ def predict(options):
             subword_list.append([subword_info.subword for subword_info in sentence])
 
         while not data_feeder.is_epoch_end():
-            subwords, bigrams, labels = data_feeder.get_next_batch()
+            subwords, bigrams, labels, _ = data_feeder.get_next_batch()
             possible_outputs = model.predict(subwords, bigrams, 3)
 
             gold_head_end_list, gold_count = get_head_end_list(labels)

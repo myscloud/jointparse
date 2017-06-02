@@ -10,6 +10,7 @@ beam_size = 20
 margin_loss_discount = 0.2
 dropout_rate = 0.4
 l2_lambda = 10e-8
+gaussian_noise = 0.2
 
 subword_lstm_dim = 100
 bigram_lstm_dim = 100
@@ -37,13 +38,11 @@ def nn_bilstm_input(input_data, scope_name, lstm_dim):
     return bilstm_output
 
 
-def nn_input_layer(subwords, bigrams, subword_emb, bigram_emb):
+def nn_input_layer(subwords, subword_emb):
     mapped_subwords = tf.nn.embedding_lookup(subword_emb, subwords)
-    # mapped_bigrams = tf.nn.embedding_lookup(bigram_emb, bigrams)
     subword_output = nn_bilstm_input(mapped_subwords, 'subword_lstm', subword_lstm_dim)
-    # bigram_output = nn_bilstm_input(mapped_bigrams, 'bigram_lstm', bigram_lstm_dim)
-    # concat_output = tf.concat([subword_output, bigram_output], axis=1)
-    return subword_output
+    input_noise = tf.Variable(tf.truncated_normal([1, subword_lstm_dim * 2], stddev=gaussian_noise), name='input_noise')
+    return tf.add(subword_output, input_noise)
 
 
 def nn_lstm_sentence_layer(input_vec):
@@ -103,7 +102,7 @@ second_labels_index = tf.placeholder(tf.int32, [None], name='placeholder/second_
 subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, embedding_dim]), trainable=False, name='subword_emb')
 bigram_embedding = tf.Variable(tf.zeros([bigram_vocab_size, embedding_dim]), name='bigram_emb')
 
-processed_input_vec = nn_input_layer(input_subwords, input_bigrams, subword_embedding, bigram_embedding)
+processed_input_vec = nn_input_layer(input_subwords, subword_embedding)
 sent_input_vec = nn_lstm_sentence_layer(processed_input_vec)
 hidden_output = nn_hidden_layer(sent_input_vec)
 normalized_output_vec, trained_output, trained_second_output = nn_output_layer(hidden_output)

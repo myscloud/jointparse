@@ -156,3 +156,44 @@ def get_segmented_words_from_labels(subwords, labels):
     if curr_word != '':
         words.append(curr_word)
     return words
+
+
+def write_reformatted_candidates(options):
+    data_type = ['training', 'eval', 'dev', 'test']
+    no_candidates = options['no_ws_candidates']
+    for data_type_name in data_type:
+        print('Writing', data_type_name, 'file')
+        old_file = options['ws_results_path'] + data_type_name + '.ws'
+        data_file = open(options['ws_results_reformatted_path'] + 'data/' + data_type_name + '.ws', 'w')
+        subword_data_file = open(options['ws_results_reformatted_path'] + 'subword_data/' + data_type_name + '.ws', 'w')
+
+        with open(old_file) as candidate_file:
+            line_count = 0
+            for line in candidate_file:
+                if line_count % no_candidates == 0:
+                    no_sentence = int(line_count / no_candidates)
+                    words = line.strip().split(' ')
+                    write_data_file(data_file, words, no_sentence)
+                    write_subword_file(subword_data_file, words, no_sentence)
+
+                line_count += 1
+
+        data_file.close()
+        subword_data_file.close()
+
+
+def write_data_file(data_file, words, no_sentence):
+    data_file.write('#Sentence ' + str(no_sentence) + '\n')
+    for word_idx, word in enumerate(words):
+        data_file.write(str(word_idx + 1) + '\t' + word + '\t<PAD>\t0\t<PAD>\n')
+    data_file.write('\n')
+
+
+def write_subword_file(subword_file, words, no_sentence):
+    subword_file.write('#Sentence ' + str(no_sentence) + '\n')
+    subword_count = 1
+    for word_idx, word in enumerate(words):
+        for c in word:
+            subword_file.write(str(subword_count) + '\t' + c  + '\t' + str(word_idx + 1) + '\n')
+            subword_count += 1
+    subword_file.write('\n')

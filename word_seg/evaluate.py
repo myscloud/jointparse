@@ -2,19 +2,20 @@
 def get_head_end_list(labels_list):
     word_count = 0
     head_end_list = list()
-    last_b = -1
+    last_start = 0
 
     for label_idx, label in enumerate(labels_list):
-        if label == 3:  # S
-            head_end_list.append(label_idx)
-            word_count += 1
-        else:
-            head_end_list.append(None)
+        head_end_list.append(None)
+        if label == 0 or label == 3:
+            last_start = label_idx
 
-        if label == 0:
-            last_b = label_idx
-        if label == 2:  # E
-            head_end_list[last_b] = label_idx
+        head_end_list[last_start] = label_idx
+
+        if label == 2 or label == 3:
+            last_start = label_idx + 1
+
+    for end_idx in head_end_list:
+        if end_idx is not None:
             word_count += 1
 
     return head_end_list, word_count

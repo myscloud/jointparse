@@ -21,7 +21,7 @@ subword_vocab_size = 100004
 bigram_vocab_size = 60436
 embedding_dim = 64
 
-n_kept_model = 3
+n_kept_model = 1
 n_class = 4
 n_second_labels_class = 16
 

@@ -8,9 +8,10 @@ import multilang_pos.data_prep as pos_data
 def train(options):
     # prepare data
     network_params = NetworkParams()
-    network_params.set_from_options(options, ['subword', 'word', 'pos'])
+    network_params.set_from_options(options, ['subword', 'word', 'pos', 'bpos'])
 
-    log_freq_map = read_word_freq_map(options['log_freq_file'])
+    # log_freq_map = read_word_freq_map(options['log_freq_file'])
+    log_freq_map = read_word_freq_map(options['subword_log_freq_file'])
     data_set_files = dict()
     data_set_files['training'] = (options['train_file_path'], options['train_subword_file_path'])
     data_set_files['eval'] = (options['eval_file_path'], options['eval_subword_file_path'])
@@ -19,8 +20,15 @@ def train(options):
     for data_set_name in data_set_files:
         data_file_path, subword_file_path = data_set_files[data_set_name]
         data_set[data_set_name] = prepare_input_data(data_file_path, subword_file_path,
-                     network_params.params['word_map'], network_params.params['subword_map'],
-                     network_params.params['pos_map'], log_freq_map, pos_data.use_defined_subword)
+                     network_params.params['subword_map'], network_params.params['subword_map'],
+                     network_params.params['bpos_map'], log_freq_map,
+                     pos_data.get_subword_windows, pos_data.get_boundary_pos_labels, 'subword')
+        # data_set[data_set_name] = prepare_input_data(data_file_path, subword_file_path,
+        #                                              network_params.params['word_map'],
+        #                                              network_params.params['subword_map'],
+        #                                              network_params.params['pos_map'], log_freq_map,
+        #                                              pos_data.use_defined_subword, pos_data.get_pos_labels,
+        #                                              'word')
     training_feeder = get_input_batch(data_set['training'], 1)
     eval_feeder = get_input_batch(data_set['eval'], 1)
 

@@ -7,7 +7,7 @@ from tools.logger import Logger
 from tools.misc import random_func
 # from pos_tag.train import train as pos_train
 from pos_tag.evaluate import evaluate_from_file
-from multilang_pos.preprocess import get_log_freq
+from multilang_pos.preprocess import get_subword_log_freq
 from multilang_pos.train import train as multilang_pos_train
 from multilang_pos.predict import predict as pos_predict
 from parse.train import train as parser_train
@@ -59,7 +59,7 @@ parser_function_map = {
     'is_ws_eval_cover': evaluate_word_segmentation_coverage,
     'is_parser_test': predict_data_set,
     'is_random': random_func,
-    'is_pos_preprocess': get_log_freq,
+    'is_pos_preprocess': get_subword_log_freq,
     'is_ws_preprocess': write_reformatted_candidates,
     'is_ws_train': ws_train,
     'is_ws_predict': ws_predict,

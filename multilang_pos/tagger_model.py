@@ -20,8 +20,8 @@ hidden_2_dim = 100
 
 output_types = ['tag', 'word_freq']
 n_output = dict()
-n_output['tag'] = 15
-n_output['word_freq'] = 14
+n_output['tag'] = 60
+n_output['word_freq'] = 13
 
 # other parameters
 n_saved_models = 2
@@ -145,6 +145,7 @@ class TaggerModel:
 
     def save_model(self, save_path, global_step):
         saver.save(self.session,save_path, global_step=global_step)
+        print('Model at epoch', global_step, 'is saved.')
 
     def initial_embedding(self, word_emb_input, subword_emb_input):
         word_emb_placeholder = tf.placeholder(tf.float32, [word_vocab_size, word_embedding_dim], name='word_pl')

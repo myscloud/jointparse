@@ -10,6 +10,7 @@ from pos_tag.evaluate import evaluate_from_file
 from multilang_pos.preprocess import get_subword_log_freq
 from multilang_pos.train import train as multilang_pos_train
 from multilang_pos.predict import predict as pos_predict
+from bpos_tag.train import train as bpos_train
 from parse.train import train as parser_train
 from parse.predict import predict_data_set
 from word_seg.preprocess import prepare_transition_prob
@@ -49,6 +50,8 @@ parser.add_argument('--predict_ws', action='store_true', dest='is_ws_predict',
                     help='Predict word segmentation results and output first k output')
 parser.add_argument('--evaluate', action='store_true', dest='is_evaluate',
                     help='Evaluate results from baseline method')
+parser.add_argument('--train_bpos', action='store_true', dest='is_bpos_train',
+                    help='Train boundary-tag tagger')
 
 parser_function_map = {
     'is_pos_train': multilang_pos_train,
@@ -63,7 +66,8 @@ parser_function_map = {
     'is_ws_preprocess': write_reformatted_candidates,
     'is_ws_train': ws_train,
     'is_ws_predict': ws_predict,
-    'is_evaluate': evaluate_baseline
+    'is_evaluate': evaluate_baseline,
+    'is_bpos_train': bpos_train
 }
 
 

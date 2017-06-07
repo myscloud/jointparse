@@ -1,8 +1,6 @@
 from math import ceil
 from collections import deque
 
-from blaze.compute.numpy import epoch
-
 from tools.experiment_data import ExperimentData
 from tools.embedding_reader import NetworkParams
 from tools.batch_reader import BatchReader

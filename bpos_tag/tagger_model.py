@@ -20,8 +20,8 @@ hidden_2_dim = 100
 
 output_types = ['tag', 'word_freq']
 n_output = dict()
-n_output['tag'] = 15
-n_output['word_freq'] = 14
+n_output['tag'] = 60
+n_output['word_freq'] = 15
 
 # other parameters
 n_saved_models = 2
@@ -39,13 +39,13 @@ subword_embedding = tf.Variable(tf.zeros([subword_vocab_size, subword_embedding_
 
 
 def nn_run_subword_processing(subwords):
-    with tf.variable_scope('subword_lstm'):
+    with tf.variable_scope('bpos_subword_lstm') as vs:
         # subword_embedding = tf.Variable(tf.random_uniform([subword_vocab_size, subword_embedding_dim],
         #                                                   minval=-0.1, maxval=0.1), name='weights/subword_embedding')
         mapped_subwords = tf.nn.embedding_lookup(subword_embedding, subwords)
-        lstm_fw_cell = rnn.BasicLSTMCell(input_subword_dim)
-        lstm_bw_cell = rnn.BasicLSTMCell(input_subword_dim)
-        lstm_outputs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, mapped_subwords, dtype=tf.float32)
+        lstm_fw_cell = rnn.BasicLSTMCell(input_subword_dim, reuse=tf.get_variable_scope().reuse)
+        lstm_bw_cell = rnn.BasicLSTMCell(input_subword_dim, reuse=tf.get_variable_scope().reuse)
+        lstm_outputs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, mapped_subwords, dtype=tf.float32, scope=vs)
         (fw_outputs, bw_outputs) = lstm_outputs
 
         return tf.concat([fw_outputs[:, -1, :], bw_outputs[:, -1, :]], 1)
@@ -59,10 +59,10 @@ def nn_run_input_layer(input_dict):
     expanded_subword_vec = tf.expand_dims(subword_vec, 0)
     word_subword = tf.concat([mapped_words, expanded_subword_vec], axis=2)
 
-    with tf.variable_scope('word_lstm'):
-        lstm_fw_cell = rnn.BasicLSTMCell(input_dim)
-        lstm_bw_cell = rnn.BasicLSTMCell(input_dim)
-        lstm_outputs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, word_subword, dtype=tf.float32)
+    with tf.variable_scope('bpos_word_lstm') as vs:
+        lstm_fw_cell = rnn.BasicLSTMCell(input_dim, reuse=tf.get_variable_scope().reuse)
+        lstm_bw_cell = rnn.BasicLSTMCell(input_dim, reuse=tf.get_variable_scope().reuse)
+        lstm_outputs, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell, lstm_bw_cell, word_subword, dtype=tf.float32, scope=vs)
 
     concat_data = tf.concat([lstm_outputs[0], lstm_outputs[1]], axis=2)
     input_data = tf.reshape(concat_data, [-1, input_dim*2])

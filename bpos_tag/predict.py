@@ -4,7 +4,7 @@ import bpos_tag.data_prep as pos_data
 from tools.embedding_reader import NetworkParams
 from tools.experiment_data import ExperimentData
 
-from numpy import argmax
+from numpy import argmax, argsort
 
 
 def predict(options):
@@ -20,8 +20,8 @@ def predict(options):
     for data_type_name in data_types:
         print('Predicting', data_type_name, 'set.')
 
-        data_file_path = options['ws_results_reformatted_path'] + 'data/' + data_type_name + '.ws'
-        subword_file_path = options['ws_results_reformatted_path'] + 'subword/' + data_type_name + '.ws'
+        data_file_path = options[data_type_name + '_file_path']
+        subword_file_path = options[data_type_name + '_subword_file_path']
 
         raw_data = prepare_input_data(data_file_path, subword_file_path, network_params.params['subword_map'],
                                       network_params.params['subword_map'], network_params.params['bpos_map'],
@@ -37,24 +37,26 @@ def predict(options):
         while not data_feeder.is_epoch_end():
             batch_input = data_feeder.get_next_batch()
             input_list = batch_input[0:3]
+            labels = batch_input[3]
             predicted_tags = model.predict(input_list)
             # words = [word_info.word for word_info in exp_data.data[sent_count]]
             words = [subword_info.subword for subword_info in exp_data.subword[sent_count]]
 
             results.append([])
-            for word, tag_score in zip(words, predicted_tags):
-                # decoded_tag = network_params.params['reverse_pos_map'][argmax(tag_score)]
-                decoded_tag = network_params.params['reverse_bpos_map'][argmax(tag_score)]
-                results[-1].append((word, decoded_tag))
+            for word, tag_score, gold_tag_idx in zip(words, predicted_tags, labels):
+                sorted_scores = argsort(tag_score)[::-1][0:options['no_pos_candidate']]
+                decoded_tags = [network_params.params['reverse_bpos_map'][tag_idx] for tag_idx in sorted_scores]
+                gold_tag = network_params.params['reverse_bpos_map'][gold_tag_idx]
+                results[-1].append((word, decoded_tags, gold_tag))
 
             sent_count += 1
 
-        output_file = options['pos_results_path'] + data_type_name + '.ws'
+        output_file = options['pos_results_path'] + data_type_name + '.pos'
         with open(output_file, 'w') as out_file:
             for sent_idx, sentence in enumerate(results):
                 out_file.write('#Sentence ' + str(sent_idx) + '\n')
-                for word_idx, (word, tag) in enumerate(sentence):
-                    out_file.write(str(word_idx + 1) + '\t' + word + '\t' + tag + '\t0\t<PAD>\n')
+                for word_idx, (word, tags, gold_tag) in enumerate(sentence):
+                    out_file.write(str(word_idx + 1) + '\t' + word + '\t' + ','.join(tags) + '\t' + gold_tag + '\n')
                 out_file.write('\n')
 
 

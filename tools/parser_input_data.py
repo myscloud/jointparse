@@ -43,7 +43,7 @@ class ParserInputData:
         candidate_list = list()
         with open(word_seg_file_path) as word_seg_file:
             for line in word_seg_file:
-                candidate_list.append(line.strip().split('  '))
+                candidate_list.append(line.strip().split(' '))
                 if len(candidate_list) == n_word_seg:
                     self.map_subword_with_candidate_words(sentence_count, candidate_list)
                     candidate_list = list()

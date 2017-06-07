@@ -17,6 +17,8 @@ regularize_param = 10e-8
 bn_epsilon = 10e-2
 bn_decay = 0.9
 
+n_kept_model = 2
+
 
 def nn_batch_normalization(z, training_phase):
     bn_gamma = tf.Variable(tf.ones(z.get_shape()[-1]))
@@ -111,7 +113,7 @@ with tf.device('/cpu:0'):
     optimizer = tf.train.AdagradOptimizer(learning_rate).minimize(network_loss)
 
     init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=n_kept_model)
 
 
 class ParserModel:
@@ -157,3 +159,4 @@ class ParserModel:
 
     def save_model(self, save_path, step_no):
         saver.save(self.session, save_path, global_step=step_no)
+        print('Model at epoch', step_no, 'is saved.')

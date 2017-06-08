@@ -145,12 +145,14 @@ def train(options):
             uas_score = epoch_eval['uas_accuracy']
             last_f1.append(f1_score)
             last_uas.append(uas_score)
-            max_f1 = max(f1_score, max_f1)
-            max_uas = max(uas_score, max_uas)
+
             print('f1 score:', f1_score)
             print('uas score:', uas_score)
             if uas_score > max_uas:
                 model.save_model(options['parser_model_save_path'], epoch_count)
+
+            max_f1 = max(f1_score, max_f1)
+            max_uas = max(uas_score, max_uas)
             write_log(options['parser_log_dir'], epoch_count, training_batch_loss, evaluation=epoch_eval)
 
         average_batch_loss = sum(last_batch_loss) / len(last_batch_loss)

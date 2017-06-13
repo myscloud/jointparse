@@ -5,7 +5,7 @@ from math import sqrt
 # network parameters
 learning_rate = 0.01
 gaussian_noise = 0.2
-dropout_prob = 0.6
+dropout_prob = 0.7
 regularize_beta = 10e-8
 
 word_vocab_size = 100004
@@ -107,9 +107,9 @@ def nn_calculate_loss(predicted_outputs):
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=dropped_output))
         all_loss += ce_loss
 
-    # all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
-    # l2_score = regularize_beta * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
-    # all_loss += l2_score
+    all_weights = [tensor for tensor in tf.global_variables() if 'weights' in tensor.name]
+    l2_score = regularize_beta * sum([tf.nn.l2_loss(tensor) for tensor in all_weights])
+    all_loss += l2_score
 
     return all_loss
 

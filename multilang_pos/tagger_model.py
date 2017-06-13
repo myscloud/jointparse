@@ -3,9 +3,9 @@ import tensorflow.contrib.rnn as rnn
 from math import sqrt
 
 # network parameters
-learning_rate = 0.1
+learning_rate = 0.01
 gaussian_noise = 0.2
-dropout_prob = 0.3
+dropout_prob = 0.6
 regularize_beta = 10e-8
 
 word_vocab_size = 100004

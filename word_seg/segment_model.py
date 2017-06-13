@@ -5,10 +5,10 @@ from math import sqrt
 from word_seg.custom_heap import CustomHeap
 
 # parameters
-learning_rate = 0.05
+learning_rate = 0.01
 beam_size = 20
 margin_loss_discount = 0.2
-dropout_rate = 0.4
+dropout_rate = 0.6
 l2_lambda = 10e-8
 gaussian_noise = 0.2
 

@@ -16,8 +16,14 @@ def get_parser_evaluation(predicted_list, gold_list):
     evaluation['pos_acc'] = (pos_correct_count / correct_count) * 100 if correct_count > 0 else 0
     evaluation['uas_match'] = uas_score
     evaluation['uas_score'] = (uas_score / correct_count) * 100 if correct_count > 0 else 0
+    evaluation['uas_precision'] = (uas_score / len(predicted_list)) * 100
+    evaluation['uas_recall'] = (uas_score / len(gold_list)) * 100
+    evaluation['uas_f1_score'] = get_f1_score(evaluation['uas_precision'], evaluation['uas_recall'])
     evaluation['las_match'] = las_score
     evaluation['las_score'] = (las_score / correct_count) * 100 if correct_count > 0 else 0
+    evaluation['las_precision'] = (las_score / len(predicted_list)) * 100
+    evaluation['las_recall'] = (las_score / len(gold_list)) * 100
+    evaluation['las_f1_score'] = get_f1_score(evaluation['las_precision'], evaluation['las_recall'])
 
     return evaluation
 
@@ -32,6 +38,8 @@ def get_epoch_evaluation(evaluation_list):
     epoch_eval['pos_accuracy'] = (sum(x['pos_acc'] for x in evaluation_list) / n_eval)
     epoch_eval['uas_accuracy'] = (sum(x['uas_score'] for x in evaluation_list) / n_eval)
     epoch_eval['las_accuracy'] = (sum(x['las_score'] for x in evaluation_list) / n_eval)
+    epoch_eval['uas_f1_score'] = (sum(x['uas_f1_score'] for x in evaluation_list) / n_eval)
+    epoch_eval['las_f1_score'] = (sum(x['las_f1_score'] for x in evaluation_list) / n_eval)
 
     epoch_eval['correct_words'] = sum([x['correct_count'] for x in evaluation_list])
     epoch_eval['all_gold_words'] = sum([x['gold_list_len'] for x in evaluation_list])

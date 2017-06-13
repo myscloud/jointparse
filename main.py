@@ -6,7 +6,7 @@ from tools.misc import get_options
 from tools.logger import Logger
 from tools.misc import random_func
 # from pos_tag.train import train as pos_train
-from pos_tag.evaluate import evaluate_from_file
+# from pos_tag.evaluate import evaluate_from_file
 from multilang_pos.preprocess import get_subword_log_freq
 from multilang_pos.train import train as multilang_pos_train
 from multilang_pos.predict import predict as pos_predict
@@ -27,8 +27,8 @@ parser.add_argument('--config', dest='config_file_path', type=str, required=True
                     help='Path to the configuration file')
 parser.add_argument('--train_pos', action='store_true', dest='is_pos_train',
                     help='Train boundary-POS tag on training data')
-parser.add_argument('--eval_pos', action='store_true', dest='is_pos_eval',
-                    help='Evaluate POS tagging results from a result file')
+# parser.add_argument('--eval_pos', action='store_true', dest='is_pos_eval',
+#                     help='Evaluate POS tagging results from a result file')
 parser.add_argument('--eval_ws', action='store_true', dest='is_ws_eval',
                     help='Evaluate word segmentation results from a candidate file')
 parser.add_argument('--eval_ws_cover', action='store_true', dest='is_ws_eval_cover',
@@ -60,7 +60,7 @@ parser_function_map = {
     'is_pos_train': multilang_pos_train,
     'is_pos_predict': pos_predict,
     'is_parser_train': parser_train,
-    'is_pos_eval': evaluate_from_file,
+    # 'is_pos_eval': evaluate_from_file,
     'is_ws_eval': evaluate_word_segmentation,
     'is_ws_eval_cover': evaluate_word_segmentation_coverage,
     'is_parser_test': predict_data_set,

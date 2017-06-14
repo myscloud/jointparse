@@ -5,8 +5,8 @@ from word_seg.evaluate import evaluate_sentence, evaluate_epoch, get_head_end_li
 
 
 def predict(options):
-    data_file_type = ['test']
-    # data_file_type = ['training', 'eval', 'dev', 'test']
+    # data_file_type = ['test']
+    data_file_type = ['training', 'eval', 'dev', 'test']
     data_file_dict = {
         'training': (options['train_file_path'], options['train_subword_file_path']),
         'eval': (options['eval_file_path'], options['eval_subword_file_path']),

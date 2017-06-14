@@ -8,7 +8,7 @@ from word_seg.custom_heap import CustomHeap
 learning_rate = 0.01
 beam_size = 20
 margin_loss_discount = 0.2
-dropout_rate = 0.6
+dropout_rate = 0.7
 l2_lambda = 10e-8
 gaussian_noise = 0.2
 
@@ -108,7 +108,8 @@ hidden_output = nn_hidden_layer(sent_input_vec)
 normalized_output_vec, trained_output, trained_second_output = nn_output_layer(hidden_output)
 
 loss = nn_calc_loss(trained_output, trained_second_output, labels_index, second_labels_index)
-optimize = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
+# optimize = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
+optimize = tf.train.AdamOptimizer().minimize(loss)
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver(max_to_keep=n_kept_model)

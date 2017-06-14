@@ -109,7 +109,7 @@ normalized_output_vec, trained_output, trained_second_output = nn_output_layer(h
 
 loss = nn_calc_loss(trained_output, trained_second_output, labels_index, second_labels_index)
 # optimize = tf.train.AdagradOptimizer(learning_rate).minimize(loss)
-optimize = tf.train.AdamOptimizer().minimize(loss)
+optimize = tf.train.AdamOptimizer(name='word_seg_opt').minimize(loss)
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver(max_to_keep=n_kept_model)

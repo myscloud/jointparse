@@ -119,7 +119,7 @@ h = nn_run_hidden_layer(processed_input)
 outputs = nn_classify(h)
 loss = nn_calculate_loss(outputs)
 # optimize = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-optimize = tf.train.AdamOptimizer().minimize(loss)
+optimize = tf.train.AdamOptimizer(name='pos_tagger_opt').minimize(loss)
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver(max_to_keep=n_saved_models)

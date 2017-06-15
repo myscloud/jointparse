@@ -126,7 +126,7 @@ class NetworkParams:
             elif unk_name:
                 mapped_list.append(map_dict[unk_name])
             else:
-                raise Exception
+                raise Exception(token + ' is not defined in ' + attribute_name)
 
         return mapped_list
 

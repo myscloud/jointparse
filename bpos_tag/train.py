@@ -10,7 +10,6 @@ def train(options):
     network_params = NetworkParams()
     network_params.set_from_options(options, ['subword', 'word', 'pos', 'bpos'])
 
-    # log_freq_map = read_word_freq_map(options['log_freq_file'])
     log_freq_map = read_word_freq_map(options['subword_log_freq_file'])
     data_set_files = dict()
     data_set_files['training'] = (options['train_file_path'], options['train_subword_file_path'])
@@ -23,16 +22,10 @@ def train(options):
                      network_params.params['subword_map'], network_params.params['subword_map'],
                      network_params.params['bpos_map'], log_freq_map,
                      pos_data.get_subword_windows, pos_data.get_boundary_pos_labels, 'subword')
-        # data_set[data_set_name] = prepare_input_data(data_file_path, subword_file_path,
-        #                                              network_params.params['word_map'],
-        #                                              network_params.params['subword_map'],
-        #                                              network_params.params['pos_map'], log_freq_map,
-        #                                              pos_data.use_defined_subword, pos_data.get_pos_labels,
-        #                                              'word')
     training_feeder = get_input_batch(data_set['training'], 1)
     eval_feeder = get_input_batch(data_set['eval'], 1)
 
-    embeddings = [network_params.params['word_embedding'], network_params.params['subword_embedding']]
+    embeddings = [network_params.params['subword_embedding'], network_params.params['subword_embedding']]
     model = TaggerModel(embeddings=embeddings)
     epoch_count = 0
     max_eval_acc = 0
@@ -77,7 +70,7 @@ def train(options):
         print('eval accuracy:', accuracy, '(', correct_count, 'from', all_count, ')')
 
         if accuracy > max_eval_acc:
-            model.save_model(options['pos_model_save_path'], epoch_count)
+            model.save_model(options['bpos_model_save_path'], epoch_count)
             max_eval_acc = accuracy
 
         print('----------------------------')

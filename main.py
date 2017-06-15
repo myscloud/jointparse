@@ -12,8 +12,9 @@ from multilang_pos.train import train as multilang_pos_train
 from multilang_pos.predict import predict as pos_predict
 from bpos_tag.train import train as bpos_train
 from bpos_tag.predict import predict as bpos_predict
-from parse.train import train as parser_train
-from parse.predict import predict_data_set
+# from parse.train import train as parser_train
+# from parse.predict import predict_data_set
+from lstm_parser.train import train as parser_train
 from word_seg.preprocess import prepare_transition_prob
 from word_seg.train import train as ws_train
 from word_seg.predict import predict as ws_predict
@@ -35,8 +36,6 @@ parser.add_argument('--eval_ws_cover', action='store_true', dest='is_ws_eval_cov
                     help='Evaluate word segmentation coverage')
 parser.add_argument('--predict_pos', action='store_true', dest='is_pos_predict',
                     help='Test POS tagging on test data')
-parser.add_argument('--test_parser', action='store_true', dest='is_parser_test',
-                    help='Test parsing on test data')
 parser.add_argument('--train_parser', action='store_true', dest='is_parser_train',
                     help='Train joint parser')
 parser.add_argument('--random', action='store_true', dest='is_random',
@@ -63,7 +62,6 @@ parser_function_map = {
     # 'is_pos_eval': evaluate_from_file,
     'is_ws_eval': evaluate_word_segmentation,
     'is_ws_eval_cover': evaluate_word_segmentation_coverage,
-    'is_parser_test': predict_data_set,
     'is_random': random_func,
     'is_pos_preprocess': get_subword_log_freq,
     'is_ws_preprocess': write_reformatted_candidates,

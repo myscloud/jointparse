@@ -39,9 +39,9 @@ def train(options):
                 all_parser_loss += train_loss
                 model.take_action(gold_action)
 
-            parser_loss = all_epoch_loss / len(sentence['gold_actions'])
+            parser_loss = all_parser_loss / len(sentence['gold_actions'])
             all_epoch_loss += parser_loss
-            if sent_idx % 10 == 0:
+            if sent_idx % 1 == 0:
                 print('Parser ', sent_idx, ', loss = ', parser_loss)
 
         epoch_loss = all_epoch_loss / len(training_data)

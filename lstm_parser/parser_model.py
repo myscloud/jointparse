@@ -283,52 +283,50 @@ class ParserModel:
 
     def take_action(self, action_index):
         (action, params) = self.params['reverse_action_map'][action_index]
-        old_stack = self.session.run(stack)
         if action == 'SHIFT':
-            self.take_action_shift(params, old_stack)
+            self.take_action_shift(params)
         elif action == 'APPEND':
-            self.take_action_append(params, old_stack)
+            self.take_action_append(params)
         elif action == 'LEFT-ARC':
-            self.take_action_left_arc(action_index, old_stack)
+            self.take_action_left_arc(action_index)
         else:
-            self.take_action_right_arc(action_index, old_stack)
+            self.take_action_right_arc(action_index)
 
         self.actions_len += 1
-        old_actions = self.session.run(actions)
         feed_dict = {action_ph: [action_index], actions_len: self.actions_len}
         self.session.run(add_to_actions, feed_dict=feed_dict)
 
-    def take_action_shift(self, pos_tag, old_stack):
+    def take_action_shift(self, pos_tag):
         word = self.subwords[0]
         self.tos_subwords = [word]
         self.subwords = self.subwords[1:]
         self.stack_len += 1
         self.buffer_len -= 1
 
-        feed_dict = self.get_word_stack_feed_dict(old_stack, word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
         self.session.run([add_word_to_stack, remove_from_buffer], feed_dict=feed_dict)
 
-    def take_action_append(self, pos_tag, old_stack):
+    def take_action_append(self, pos_tag):
         subword = self.subwords[0]
         self.tos_subwords.append(subword)
         word = ''.join(self.tos_subwords)
         self.subwords = self.subwords[1:]
         self.buffer_len -= 1
 
-        feed_dict = self.get_word_stack_feed_dict(old_stack, word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
         self.session.run([replace_word_tos, remove_from_buffer], feed_dict=feed_dict)
 
-    def take_action_left_arc(self, action_index, old_stack):
+    def take_action_left_arc(self, action_index):
         self.stack_len -= 1
         feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
         self.session.run(left_arc_replace, feed_dict=feed_dict)
 
-    def take_action_right_arc(self, action_index, old_stack):
+    def take_action_right_arc(self, action_index):
         self.stack_len -= 1
         feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
         self.session.run(right_arc_replace, feed_dict=feed_dict)
 
-    def get_word_stack_feed_dict(self, old_stack, word, subwords, pos):
+    def get_word_stack_feed_dict(self, word, subwords, pos):
         feed_dict = {
             word_ph: [self.params['word_map'].get(word, 0)],
             subword_list_ph: [self.params['subword_map'].get(subword, 0) for subword in subwords],

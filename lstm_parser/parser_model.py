@@ -27,7 +27,7 @@ candidate_emb_dim = 20
 
 n_pos = 16
 n_bpos = 61
-n_action = 107
+n_label = 38
 n_class = 106
 
 # variables, placeholders, embeddings
@@ -63,7 +63,7 @@ word_emb = tf.Variable(tf.random_uniform([word_vocab_size, candidate_emb_dim], m
 bpos_emb = tf.Variable(tf.random_uniform([n_bpos, candidate_emb_dim], minval=-0.1, maxval=0.1), name='embedding_bpos')
 
 pos_emb = tf.Variable(tf.random_uniform([n_pos, param_emb_dim], minval=-0.1, maxval=0.1), name='embedding_pos')
-action_emb = tf.Variable(tf.random_uniform([n_action, param_emb_dim], minval=-0.1, maxval=0.1), name='embedding_action')
+action_emb = tf.Variable(tf.random_uniform([n_label, param_emb_dim], minval=-0.1, maxval=0.1), name='embedding_action')
 
 
 def nn_run_lstm_input(input_vec, dim, seq_len, scope_name):
@@ -77,18 +77,20 @@ def nn_run_lstm_input(input_vec, dim, seq_len, scope_name):
 with tf.name_scope('input_layer'):
     padded_buffer = tf.pad(buffer, [[0, 0], [0, buffer_max_len - buffer_len], [0, 0]])
     padded_stack = tf.pad(stack, [[0, 0], [0, stack_max_len - stack_len], [0, 0]])
-    padded_actions = tf.pad(actions, [[0, 0], [0, actions_max_len - actions_len], [0, 0]])
+    # padded_actions = tf.pad(actions, [[0, 0], [0, actions_max_len - actions_len], [0, 0]])
 
     reshaped_padded_buffer = tf.reshape(padded_buffer, [1, buffer_max_len, lstm_dim])
     reshaped_padded_stack = tf.reshape(padded_stack, [1, stack_max_len, lstm_dim])
-    reshaped_padded_actions = tf.reshape(padded_actions, [1, actions_max_len, lstm_dim])
+    # reshaped_padded_actions = tf.reshape(padded_actions, [1, actions_max_len, lstm_dim])
 
     lstm_buffer = nn_run_lstm_input(reshaped_padded_buffer, lstm_dim, buffer_len, 'lstm_buffer')
     lstm_stack = nn_run_lstm_input(reshaped_padded_stack, lstm_dim, stack_len, 'lstm_stack')
-    lstm_actions = nn_run_lstm_input(reshaped_padded_actions, lstm_dim, actions_len, 'lstm_actions')
+    # lstm_actions = nn_run_lstm_input(reshaped_padded_actions, lstm_dim, actions_len, 'lstm_actions')
 
-    input_concat_vec = tf.concat([lstm_stack, lstm_buffer, lstm_actions], axis=-1)
-    input_dim = 3 * lstm_dim
+    # input_concat_vec = tf.concat([lstm_stack, lstm_buffer, lstm_actions], axis=-1)
+    # input_dim = 3 * lstm_dim
+    input_concat_vec = tf.concat([lstm_stack, lstm_buffer], axis=-1)
+    input_dim = 2 * lstm_dim
     input_weight = tf.Variable(tf.truncated_normal([input_dim, output_dim], stddev=1.0/sqrt(output_dim)),
                                 name='weight_input')
     input_bias = tf.Variable(tf.zeros(output_dim), name='bias_input')
@@ -204,7 +206,18 @@ with tf.name_scope('modify_actions'):
     new_actions = tf.concat([actions, reshaped_action_vec], axis=1)
     add_to_actions = tf.assign(actions, new_actions, validate_shape=False)
 
-optimize = tf.train.AdamOptimizer(name='parser_opt').minimize(loss)
+with tf.name_scope('optimize'):
+    optimizer = tf.train.AdamOptimizer(name='parser_opt')
+    variable_list = tf.trainable_variables()
+    # compute_grad = optimizer.compute_gradients(loss)
+    compute_grad = optimizer.compute_gradients(loss, var_list=variable_list)
+
+    gradient_tensor_ph = tf.placeholder(tf.float32, name='placeholder_gradient')
+    calc_gradient_sum = tf.reduce_sum(gradient_tensor_ph, 0)
+
+    gradient_ph = [(tf.placeholder(tf.float32), grad_info[1]) for grad_info in compute_grad]
+    apply_grad = optimizer.apply_gradients(gradient_ph)
+
 init = tf.global_variables_initializer()
 saver = tf.train.Saver(max_to_keep=n_kept_model)
 
@@ -228,8 +241,12 @@ class ParserModel:
         self.stack_len = 0
         self.buffer_len = 0
         self.actions_len = 0
+        self.gradients = [list() for _ in range(len(compute_grad))]
 
-    def train(self, action_label, feasible_actions):
+        self.stack_states = list()
+        self.action_state = None
+
+    def calc_loss(self, action_label, feasible_actions):
         feed_dict = {
             label: [action_label],
             output_mask: feasible_actions,
@@ -237,8 +254,25 @@ class ParserModel:
             buffer_len: self.buffer_len,
             actions_len: self.actions_len
         }
-        _, train_loss = self.session.run([optimize, loss], feed_dict=feed_dict)
+
+        train_loss = self.session.run(loss, feed_dict=feed_dict)
+        grad_op = [grad[0] for grad in compute_grad if grad[0] is not None]
+        grad_idx = [idx for idx, grad in enumerate(compute_grad) if grad[0] is not None]
+        gradients = self.session.run(grad_op, feed_dict=feed_dict)
+        for idx, value in zip(grad_idx, gradients):
+            self.gradients[idx].append(value)
         return train_loss
+
+    def train(self):
+        feed_dict = dict()
+        for grad_idx, grad_value in enumerate(self.gradients):
+            if len(grad_value) > 0:
+                computed_value = self.session.run(calc_gradient_sum, feed_dict={gradient_tensor_ph: grad_value})
+                feed_dict[gradient_ph[grad_idx][0]] = computed_value
+            else:
+                feed_dict[gradient_ph[grad_idx][0]] = self.session.run(tf.zeros(tf.shape(compute_grad[grad_idx][1])))
+
+        self.session.run(apply_grad, feed_dict=feed_dict)
 
     def predict(self, feasible_actions):
         feed_dict = {
@@ -261,6 +295,8 @@ class ParserModel:
         self.buffer_len = len(real_subword) + 1
         self.stack_len = 1
         self.actions_len = 1
+        for grad_list in self.gradients:
+            grad_list.clear()
 
         # reset in network
         feed_dict = {
@@ -279,7 +315,7 @@ class ParserModel:
             subwords_len: 1
         }
         self.session.run(initial_stack, feed_dict=feed_dict)
-        self.session.run(initial_actions, feed_dict={action_ph: [n_action - 1], actions_len: self.actions_len})
+        # self.session.run(initial_actions, feed_dict={action_ph: [n_action - 1], actions_len: self.actions_len})
 
     def take_action(self, action_index):
         (action, params) = self.params['reverse_action_map'][action_index]
@@ -288,13 +324,13 @@ class ParserModel:
         elif action == 'APPEND':
             self.take_action_append(params)
         elif action == 'LEFT-ARC':
-            self.take_action_left_arc(action_index)
+            self.take_action_left_arc(params)
         else:
-            self.take_action_right_arc(action_index)
+            self.take_action_right_arc(params)
 
         self.actions_len += 1
-        feed_dict = {action_ph: [action_index], actions_len: self.actions_len}
-        self.session.run(add_to_actions, feed_dict=feed_dict)
+        # feed_dict = {action_ph: [action_index], actions_len: self.actions_len}
+        # self.session.run(add_to_actions, feed_dict=feed_dict)
 
     def take_action_shift(self, pos_tag):
         word = self.subwords[0]
@@ -316,14 +352,14 @@ class ParserModel:
         feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
         self.session.run([replace_word_tos, remove_from_buffer], feed_dict=feed_dict)
 
-    def take_action_left_arc(self, action_index):
+    def take_action_left_arc(self, rel):
         self.stack_len -= 1
-        feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
+        feed_dict = {relation_action_ph: [self.params['dep_label_map'][rel]], stack_len: self.stack_len}
         self.session.run(left_arc_replace, feed_dict=feed_dict)
 
-    def take_action_right_arc(self, action_index):
+    def take_action_right_arc(self, rel):
         self.stack_len -= 1
-        feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
+        feed_dict = {relation_action_ph: [self.params['dep_label_map'][rel]], stack_len: self.stack_len}
         self.session.run(right_arc_replace, feed_dict=feed_dict)
 
     def get_word_stack_feed_dict(self, word, subwords, pos):

@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
 from math import sqrt
+from numpy import argmax
 
 # parameters
 dropout_prob = 0.5
@@ -99,7 +100,7 @@ with tf.name_scope('output_layer'):
     output_bias = tf.Variable(tf.zeros(n_class), name='bias_output')
     out = tf.matmul(input_out, output_weight) + output_bias
 
-    prediction = tf.multiply(out, output_mask)
+    prediction = tf.multiply(tf.nn.softmax(out), output_mask)
 
 with tf.name_scope('calculate_loss'):
     dropped_hidden = tf.nn.dropout(input_out, dropout_prob)
@@ -107,8 +108,6 @@ with tf.name_scope('calculate_loss'):
 
     one_hot_labels = tf.one_hot(label, n_class, on_value=1.0, off_value=0.0)
     ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped_output, labels=one_hot_labels))
-    # TODO: add l2 regularization
-
     loss = ce_loss
 
 with tf.name_scope('initial_buffer'):
@@ -180,20 +179,19 @@ with tf.name_scope('modify_stack'):
     initial_stack = tf.assign(stack, reshaped_stack_vec, validate_shape=False)
 
     # shift
-    stack_ph = tf.placeholder(tf.float32, [1, None, lstm_dim], name='placeholder_stack')
-    new_word_stack = tf.concat([stack_ph, reshaped_stack_vec], axis=1)
+    new_word_stack = tf.concat([stack, reshaped_stack_vec], axis=1)
     add_word_to_stack = tf.assign(stack, new_word_stack, validate_shape=False)
 
     # append
-    new_replaced_word = tf.concat([stack_ph[:, :-1, :], reshaped_stack_vec], axis=1)
+    new_replaced_word = tf.concat([stack[:, :-1, :], reshaped_stack_vec], axis=1)
     replace_word_tos = tf.assign(stack, new_replaced_word, validate_shape=False)
 
     # left-arc
-    new_stack_left_arc = tf.concat([stack_ph[:, :-2, :], reshaped_left_arc_vec], axis=1)
+    new_stack_left_arc = tf.concat([stack[:, :-2, :], reshaped_left_arc_vec], axis=1)
     left_arc_replace = tf.assign(stack, new_stack_left_arc, validate_shape=False)
 
     # right-arc
-    new_stack_right_arc = tf.concat([stack_ph[:, :-2, :], reshaped_right_arc_vec], axis=1)
+    new_stack_right_arc = tf.concat([stack[:, :-2, :], reshaped_right_arc_vec], axis=1)
     right_arc_replace = tf.assign(stack, new_stack_right_arc, validate_shape=False)
 
 with tf.name_scope('modify_actions'):
@@ -203,8 +201,7 @@ with tf.name_scope('modify_actions'):
 
     initial_actions = tf.assign(actions, reshaped_action_vec, validate_shape=False)
 
-    actions_list_ph = tf.placeholder(tf.float32, [1, None, lstm_dim], name='placeholder_actions')
-    new_actions = tf.concat([actions_list_ph, reshaped_action_vec], axis=1)
+    new_actions = tf.concat([actions, reshaped_action_vec], axis=1)
     add_to_actions = tf.assign(actions, new_actions, validate_shape=False)
 
 optimize = tf.train.AdamOptimizer(name='parser_opt').minimize(loss)
@@ -242,6 +239,20 @@ class ParserModel:
         }
         _, train_loss = self.session.run([optimize, loss], feed_dict=feed_dict)
         return train_loss
+
+    def predict(self, feasible_actions):
+        feed_dict = {
+            output_mask: feasible_actions,
+            stack_len: self.stack_len,
+            buffer_len: self.buffer_len,
+            actions_len: self.actions_len
+        }
+        pred = self.session.run(prediction, feed_dict=feed_dict)
+        return argmax(pred)
+
+    def save_model(self, model_path, global_step):
+        saver.save(self.session, model_path, global_step=global_step)
+        print('Model at epoch', global_step, 'is saved.')
 
     def initial_parser_model(self, subwords, word_candidates, bpos_candidates, real_subword):
         # reset subword list
@@ -284,7 +295,7 @@ class ParserModel:
 
         self.actions_len += 1
         old_actions = self.session.run(actions)
-        feed_dict = {action_ph: [action_index], actions_list_ph: old_actions, actions_len: self.actions_len}
+        feed_dict = {action_ph: [action_index], actions_len: self.actions_len}
         self.session.run(add_to_actions, feed_dict=feed_dict)
 
     def take_action_shift(self, pos_tag, old_stack):
@@ -309,17 +320,16 @@ class ParserModel:
 
     def take_action_left_arc(self, action_index, old_stack):
         self.stack_len -= 1
-        feed_dict = {stack_ph: old_stack, relation_action_ph: [action_index], stack_len: self.stack_len}
+        feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
         self.session.run(left_arc_replace, feed_dict=feed_dict)
 
     def take_action_right_arc(self, action_index, old_stack):
         self.stack_len -= 1
-        feed_dict = {stack_ph: old_stack, relation_action_ph: [action_index], stack_len: self.stack_len}
+        feed_dict = {relation_action_ph: [action_index], stack_len: self.stack_len}
         self.session.run(right_arc_replace, feed_dict=feed_dict)
 
     def get_word_stack_feed_dict(self, old_stack, word, subwords, pos):
         feed_dict = {
-            stack_ph: old_stack,
             word_ph: [self.params['word_map'].get(word, 0)],
             subword_list_ph: [self.params['subword_map'].get(subword, 0) for subword in subwords],
             pos_ph: [self.params['pos_map'][pos]],

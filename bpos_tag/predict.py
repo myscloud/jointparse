@@ -15,7 +15,7 @@ def predict(options):
     log_freq_map = read_word_freq_map(options['subword_log_freq_file'])
 
     data_types = ['train', 'eval', 'dev', 'test']
-    model = TaggerModel(model_path=options['pos_model_load_path'])
+    model = TaggerModel(model_path=options['bpos_model_load_path'])
 
     for data_type_name in data_types:
         print('Predicting', data_type_name, 'set.')

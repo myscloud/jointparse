@@ -15,17 +15,17 @@ def predict(options):
     log_freq_map = read_word_freq_map(options['log_freq_file'])
     # log_freq_map = read_word_freq_map(options['subword_log_freq_file'])
 
-    data_types = ['train', 'eval', 'dev', 'test']
+    data_types = ['training', 'eval', 'dev', 'test']
     model = TaggerModel(model_path=options['pos_model_load_path'])
 
     for data_type_name in data_types:
         print('Predicting', data_type_name, 'set.')
 
-        # data_file_path = options['ws_results_reformatted_path'] + 'data/' + data_type_name + '.ws'
-        # subword_file_path = options['ws_results_reformatted_path'] + 'subword/' + data_type_name + '.ws'
-
-        data_file_path = options[data_type_name + '_file_path']
-        subword_file_path = options[data_type_name + '_subword_file_path']
+        data_file_path = options['ws_results_reformatted_path'] + 'data/' + data_type_name + '.ws'
+        subword_file_path = options['ws_results_reformatted_path'] + 'subword_data/' + data_type_name + '.ws'
+        #
+        # data_file_path = options[data_type_name + '_file_path']
+        # subword_file_path = options[data_type_name + '_subword_file_path']
 
         # raw_data = prepare_input_data(data_file_path, subword_file_path, network_params.params['subword_map'],
         #                               network_params.params['subword_map'], network_params.params['bpos_map'],

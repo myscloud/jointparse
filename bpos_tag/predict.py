@@ -51,7 +51,7 @@ def predict(options):
 
             sent_count += 1
 
-        output_file = options['pos_results_path'] + data_type_name + '.pos'
+        output_file = options['bpos_results_path'] + data_type_name + '.pos'
         with open(output_file, 'w') as out_file:
             for sent_idx, sentence in enumerate(results):
                 out_file.write('#Sentence ' + str(sent_idx) + '\n')

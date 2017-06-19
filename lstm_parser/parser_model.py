@@ -94,9 +94,10 @@ with tf.name_scope('output_layer'):
 with tf.name_scope('calculate_loss'):
     dropped_hidden = tf.nn.dropout(input_out, dropout_prob)
     dropped_output = tf.matmul(dropped_hidden, output_weight) + output_bias
+    filtered_output = tf.multiply(dropped_output, output_mask)
 
     one_hot_labels = tf.one_hot(label, n_class, on_value=1.0, off_value=0.0)
-    ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped_output, labels=one_hot_labels))
+    ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=filtered_output, labels=one_hot_labels))
     loss = ce_loss
 
 with tf.name_scope('optimize'):

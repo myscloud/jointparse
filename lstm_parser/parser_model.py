@@ -23,8 +23,10 @@ candidate_emb_dim = 30
 
 n_pos = 16
 n_bpos = 61
-n_class = 106
+# n_class = 106
+n_class = {'action': 4, 'pos': 16, 'dep_label': 39}
 n_action = 107
+action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
 # variables, placeholders, embeddings
 buffer = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer', trainable=False)
@@ -46,7 +48,11 @@ pos_ph = tf.placeholder(tf.int32, None, name='placeholder_pos')
 relation_action_ph = tf.placeholder(tf.int32, [None], name='placeholder_rel_action')
 action_ph = tf.placeholder(tf.int32, None, name='placeholder_action')
 output_mask = tf.placeholder(tf.float32, [None], name='placeholder_output_mask')
-label = tf.placeholder(tf.int32, None, name='placeholder_output')
+label_ph = {
+    'action': tf.placeholder(tf.int32, None, name='placeholder_action_label'),
+    'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
+    'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label')
+}
 
 word_lm_emb = tf.Variable(tf.zeros([word_vocab_size, word_emb_dim]), trainable=False, name='embedding_word_lm')
 subword_emb = tf.Variable(tf.zeros([subword_vocab_size, word_emb_dim]), trainable=False, name='embedding_subword')
@@ -85,21 +91,28 @@ with tf.name_scope('input_layer'):
     input_out = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
 
 with tf.name_scope('output_layer'):
-    output_weight = tf.Variable(tf.truncated_normal([output_dim, n_class], stddev=1.0 / sqrt(n_class)),
-                                name='weight_output')
-    output_bias = tf.Variable(tf.zeros(n_class), name='bias_output')
-    out = tf.matmul(input_out, output_weight) + output_bias
+    output_weights = dict()
+    output_bias = dict()
+    predictions = dict()
+    dropped = dict()
 
-    prediction = tf.multiply(tf.nn.softmax(out), output_mask)
+    dropped_hidden = tf.nn.dropout(input_out, dropout_prob)
+    for output_name in n_class:
+        output_weights[output_name] = tf.Variable(
+            tf.truncated_normal([output_dim, n_class[output_name]], stddev=1.0/sqrt(n_class[output_name])),
+            name='weight_output_'+output_name)
+        output_bias[output_name] = tf.Variable(tf.zeros(n_class[output_name]), name='bias_output_' + output_name)
+        predictions[output_name] = tf.matmul(input_out, output_weights[output_name]) + output_bias[output_name]
+        dropped[output_name] = tf.matmul(dropped_hidden, output_weights[output_name]) + output_bias[output_name]
+
+    predictions['action'] = tf.multiply(tf.nn.softmax(predictions['action']), output_mask)
+    dropped['action'] = tf.multiply(dropped['action'], output_mask)
 
 with tf.name_scope('calculate_loss'):
-    dropped_hidden = tf.nn.dropout(input_out, dropout_prob)
-    dropped_output = tf.matmul(dropped_hidden, output_weight) + output_bias
-    filtered_output = tf.multiply(dropped_output, output_mask)
-
-    one_hot_labels = tf.one_hot(label, n_class, on_value=1.0, off_value=0.0)
-    ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=filtered_output, labels=one_hot_labels))
-    loss = ce_loss
+    loss = 0
+    for output_name in n_class:
+        one_hot_labels = tf.one_hot(label_ph[output_name], n_class[output_name], on_value=1.0, off_value=0.0)
+        loss += tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped[output_name], labels=one_hot_labels))
 
 with tf.name_scope('optimize'):
     optimizer = tf.train.AdamOptimizer(name='parser_opt')
@@ -261,8 +274,15 @@ class ParserModel:
         self.action_count = 0
 
     def calc_loss(self, action_label, feasible_actions):
+        (action, params) = self.params['reverse_action_map'][action_label]
+        action_label = action_name_list.index(action)
+        pos_label = self.params['pos_map'][params] if action_label >= 2 else (n_class['pos'] - 1)
+        dep_label = self.params['dep_label_map'][params] if action_label < 2 else (n_class['dep_label'] - 1)
+
         feed_dict = {
-            label: [action_label],
+            label_ph['action']: [action_label],
+            label_ph['pos']: [pos_label],
+            label_ph['dep_label']: [dep_label],
             output_mask: feasible_actions
         }
 
@@ -273,8 +293,15 @@ class ParserModel:
         self.session.run(apply_grad)
 
     def predict(self, feasible_actions):
-        pred = self.session.run(prediction, feed_dict={output_mask: feasible_actions})
-        return argmax(pred)
+        predicted_outputs = self.session.run(predictions, feed_dict={output_mask: feasible_actions})
+        max_action = argmax(predicted_outputs['action'])
+        action = action_name_list[max_action]
+        if max_action >= 2:
+            params = self.params['reverse_pos_map'][argmax(predicted_outputs['pos'][0][:-1])]
+        else:
+            params = self.params['reverse_dep_label_map'][argmax(predicted_outputs['dep_label'][0][:-1])]
+        action_index = self.params['action_map'][(action, params)]
+        return action_index
 
     def save_model(self, model_path, global_step):
         saver.save(self.session, model_path, global_step=global_step)

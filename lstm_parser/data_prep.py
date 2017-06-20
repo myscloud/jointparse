@@ -149,11 +149,24 @@ def get_gold_action_list(sentence_data, gold_data, subword_data):
     return action_list, feasible_action_list
 
 
+action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
+
+
 def get_feasible_action_index(feasible_actions, reverse_map):
     index_list = list()
-    for i in range(len(reverse_map)-1):
-        if reverse_map[i][0] in feasible_actions:
+    for action in action_name_list:
+        if action in feasible_actions:
             index_list.append(1)
         else:
             index_list.append(0)
     return index_list
+
+
+# def get_feasible_action_index(feasible_actions, reverse_map):
+#     index_list = list()
+#     for i in range(len(reverse_map)-1):
+#         if reverse_map[i][0] in feasible_actions:
+#             index_list.append(1)
+#         else:
+#             index_list.append(0)
+#     return index_list

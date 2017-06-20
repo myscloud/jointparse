@@ -28,14 +28,34 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="action" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/data/params/action">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="317">
+              <caret line="82" column="11" lean-forward="true" selection-start-line="82" selection-start-column="11" selection-end-line="82" selection-end-column="11" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="train.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lstm_parser/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="765">
-              <caret line="45" column="68" lean-forward="true" selection-start-line="45" selection-start-column="68" selection-end-line="45" selection-end-column="68" />
+            <state relative-caret-position="272">
+              <caret line="16" column="44" lean-forward="false" selection-start-line="16" selection-start-column="44" selection-end-line="16" selection-end-column="44" />
               <folding>
                 <element signature="e#0#53#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="parser.log" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/log/zh/parser/model01/parser.log">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="23477">
+              <caret line="1530" column="423" lean-forward="false" selection-start-line="1530" selection-start-column="423" selection-end-line="1530" selection-end-column="423" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -53,8 +73,8 @@
       <file leaf-file-name="parser_model.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/lstm_parser/parser_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="538">
-              <caret line="96" column="62" lean-forward="true" selection-start-line="96" selection-start-column="62" selection-end-line="96" selection-end-column="62" />
+            <state relative-caret-position="255">
+              <caret line="15" column="15" lean-forward="true" selection-start-line="15" selection-start-column="15" selection-end-line="15" selection-end-column="15" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -66,20 +86,10 @@
         <entry file="file://$PROJECT_DIR$/lstm_parser/predict.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="187">
-              <caret line="11" column="54" lean-forward="true" selection-start-line="11" selection-start-column="54" selection-end-line="11" selection-end-column="54" />
+              <caret line="11" column="54" lean-forward="false" selection-start-line="11" selection-start-column="54" selection-end-line="11" selection-end-column="54" />
               <folding>
                 <element signature="e#0#54#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="action" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/data/params/action">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="674">
-              <caret line="107" column="0" lean-forward="false" selection-start-line="107" selection-start-column="0" selection-end-line="107" selection-end-column="0" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -107,8 +117,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>dropout</find>
-      <find>saved</find>
       <find>10</find>
       <find>input_vec</find>
       <find>n_class</find>
@@ -137,6 +145,8 @@
       <find>assign</find>
       <find>tf.assign(stack</find>
       <find>print</find>
+      <find>action</find>
+      <find>action_len_ph</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -145,7 +155,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/word_seg/beam_queue.py" />
         <option value="$PROJECT_DIR$/word_seg/custom_heap.py" />
         <option value="$PROJECT_DIR$/results/zh/ws/model02/test.ws" />
         <option value="$PROJECT_DIR$/word_seg/train.py" />
@@ -194,8 +203,9 @@
         <option value="$PROJECT_DIR$/multilang_pos/predict.py" />
         <option value="$PROJECT_DIR$/lstm_parser/old_parser_model.py" />
         <option value="$PROJECT_DIR$/lstm_parser/parse_model.py" />
-        <option value="$PROJECT_DIR$/lstm_parser/parser_model.py" />
         <option value="$PROJECT_DIR$/lstm_parser/train.py" />
+        <option value="$PROJECT_DIR$/log/zh/parser/model01/parser.log" />
+        <option value="$PROJECT_DIR$/lstm_parser/parser_model.py" />
       </list>
     </option>
   </component>
@@ -258,6 +268,64 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="lstm_parser" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="log" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="log" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="zh" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jointparse" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="log" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="zh" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="parser" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="model01" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -485,13 +553,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/data/params/pos">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/data/zh/test/zh-test.ws">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -785,14 +846,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/options.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="595">
-          <caret line="68" column="22" lean-forward="false" selection-start-line="68" selection-start-column="0" selection-end-line="68" selection-end-column="22" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/parse/predict.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -824,35 +877,51 @@
     <entry file="file://$PROJECT_DIR$/lstm_parser/predict.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="187">
-          <caret line="11" column="54" lean-forward="true" selection-start-line="11" selection-start-column="54" selection-end-line="11" selection-end-column="54" />
+          <caret line="11" column="54" lean-forward="false" selection-start-line="11" selection-start-column="54" selection-end-line="11" selection-end-column="54" />
           <folding>
             <element signature="e#0#54#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/data/params/action">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="674">
-          <caret line="107" column="0" lean-forward="false" selection-start-line="107" selection-start-column="0" selection-end-line="107" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/lstm_parser/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="765">
-          <caret line="45" column="68" lean-forward="true" selection-start-line="45" selection-start-column="68" selection-end-line="45" selection-end-column="68" />
+        <state relative-caret-position="272">
+          <caret line="16" column="44" lean-forward="false" selection-start-line="16" selection-start-column="44" selection-end-line="16" selection-end-column="44" />
           <folding>
             <element signature="e#0#53#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/log/zh/parser/model01/parser.log">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="23477">
+          <caret line="1530" column="423" lean-forward="false" selection-start-line="1530" selection-start-column="423" selection-end-line="1530" selection-end-column="423" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/options.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="595">
+          <caret line="68" column="22" lean-forward="false" selection-start-line="68" selection-start-column="0" selection-end-line="68" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/data/params/action">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="317">
+          <caret line="82" column="11" lean-forward="true" selection-start-line="82" selection-start-column="11" selection-end-line="82" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/lstm_parser/parser_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="538">
-          <caret line="96" column="62" lean-forward="true" selection-start-line="96" selection-start-column="62" selection-end-line="96" selection-end-column="62" />
+        <state relative-caret-position="255">
+          <caret line="15" column="15" lean-forward="true" selection-start-line="15" selection-start-column="15" selection-end-line="15" selection-end-column="15" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

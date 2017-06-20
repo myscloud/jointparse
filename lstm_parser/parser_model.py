@@ -4,7 +4,7 @@ from math import sqrt
 from numpy import argmax, zeros
 
 # parameters
-dropout_prob = 0.5
+dropout_prob = 0.7
 n_kept_model = 1
 
 k_word_candidate = 3
@@ -79,6 +79,7 @@ def nn_run_lstm_input(input_vec, dim, scope_name, init_state=None):
 with tf.name_scope('input_layer'):
     input_concat_vec = tf.concat([stack_lstm_vec, buffer_lstm_vec, action_lstm_vec], axis=-1)
     input_dim = 3 * lstm_dim
+
     input_weight = tf.Variable(tf.truncated_normal([input_dim, output_dim], stddev=1.0/sqrt(output_dim)), name='weight_input')
     input_bias = tf.Variable(tf.zeros([output_dim]), name='bias_input')
     input_out = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
@@ -107,13 +108,10 @@ with tf.name_scope('optimize'):
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]
     reset_gradient = [tf.assign(grad_sum, tf.zeros(tf.shape(grad[1])))
                       for grad_sum, grad in zip(gradients_list, computable_grad)]
+
     iter_compute_grad = [tf.assign(grad_sum, tf.add(grad_sum, grad[0]))
                          for grad_sum, grad in zip(gradients_list, computable_grad)]
 
-    # gradient_tensor_ph = tf.placeholder(tf.float32, name='placeholder_gradient')
-    # calc_gradient_sum = tf.reduce_sum(gradient_tensor_ph, 0)
-    #
-    # gradient_ph = [(tf.placeholder(tf.float32), grad_info[1]) for grad_info in compute_grad]
     epoch_grad = [(grad_sum, grad_info[1]) for grad_sum, grad_info in zip(gradients_list, computable_grad)]
     apply_grad = optimizer.apply_gradients(epoch_grad)
 
@@ -138,9 +136,11 @@ with tf.name_scope('stack_word_node'):
     mapped_word = tf.nn.embedding_lookup(word_lm_emb, word_ph)
     mapped_subwords_s = tf.nn.embedding_lookup(subword_emb, subword_list_ph)
     _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'lstm_subword')
-    mapped_pos = tf.nn.embedding_lookup(pos_emb, pos_ph)
+    # mapped_pos = tf.nn.embedding_lookup(pos_emb, pos_ph)
+    # stack_concat_vec = tf.concat([mapped_word, subword_lstm, mapped_pos], axis=-1)
 
-    stack_concat_vec = tf.concat([mapped_word, subword_lstm, mapped_pos], axis=-1)
+    mapped_action = tf.nn.embedding_lookup(action_emb, relation_action_ph)
+    stack_concat_vec = tf.concat([mapped_word, subword_lstm, mapped_action], axis=-1)
     stack_vec = tf.nn.relu(tf.matmul(stack_concat_vec, stack_word_weight) + stack_word_bias)
     # reshaped_stack_vec = tf.expand_dims(stack_vec, 0)
 
@@ -256,9 +256,7 @@ class ParserModel:
         self.gradients = [list() for _ in range(len(compute_grad))]
         self.grad_op = [grad[0] for grad in compute_grad if grad[0] is not None]
         self.grad_idx = [idx for idx, grad in enumerate(compute_grad) if grad[0] is not None]
-
-        self.stack_states = list()
-        self.action_state = None
+        self.action_count = 0
 
     def calc_loss(self, action_label, feasible_actions):
         feed_dict = {
@@ -283,8 +281,7 @@ class ParserModel:
     def initial_parser_model(self, subwords, word_candidates, bpos_candidates, real_subword):
         self.tos_subwords = list()
         self.subwords = real_subword
-        self.stack_states = [rnn.LSTMStateTuple(zeros((1, lstm_dim)), zeros((1, lstm_dim)))]
-        self.action_state = rnn.LSTMStateTuple(zeros((1, lstm_dim)), zeros((1, lstm_dim)))
+        self.action_count = 0
 
         for grad_list in self.gradients:
             grad_list.clear()
@@ -297,7 +294,7 @@ class ParserModel:
             # for stack
             word_ph: [1],
             subword_list_ph: [1],
-            pos_ph: [n_pos - 1],
+            relation_action_ph: [82],  # SHIFT X
             # for action
             action_ph: [n_action - 1]
         }
@@ -311,9 +308,9 @@ class ParserModel:
 
         # generate new stack cell depends on action
         if action == 'SHIFT':
-            self.take_action_shift(params)
+            self.take_action_shift(action_index)
         elif action == 'APPEND':
-            self.take_action_append(params)
+            self.take_action_append(action_index)
         elif action == 'LEFT-ARC':
             self.take_action_left_arc(action_index)
         else:
@@ -321,43 +318,41 @@ class ParserModel:
 
         self.session.run(add_action, feed_dict={action_ph: action_index})
         self.calculate_lstm_vec()
+        self.action_count += 1
 
     def calculate_lstm_vec(self):
         # generate action cell and lstm output in the graph
         action_list = [calc_buffer_lstm, calc_stack_lstm, calc_action_lstm, assign_stack_state, assign_action_state]
         self.session.run(action_list)
 
-    def take_action_shift(self, pos_tag):
+    def take_action_shift(self, action_index):
         word = self.subwords[0]
         self.tos_subwords = [word]
         self.subwords = self.subwords[1:]
 
-        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, action_index)
         self.session.run([remove_buffer, shift_to_stack], feed_dict=feed_dict)
 
-    def take_action_append(self, pos_tag):
+    def take_action_append(self, action_index):
         subword = self.subwords[0]
         self.tos_subwords.append(subword)
         word = ''.join(self.tos_subwords)
         self.subwords = self.subwords[1:]
-        self.stack_states = self.stack_states[:-1]
 
-        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, action_index)
         self.session.run([remove_buffer, append_to_stack, append_assign_new_state], feed_dict=feed_dict)
 
     def take_action_left_arc(self, action_index):
-        self.stack_states = self.stack_states[:-2]
         self.session.run([add_left_arc, la_assign_new_state], feed_dict={relation_action_ph: [action_index]})
 
     def take_action_right_arc(self, action_index):
-        self.stack_states = self.stack_states[:-2]
         self.session.run([add_right_arc, ra_assign_new_state], feed_dict={relation_action_ph: [action_index]})
 
-    def get_word_stack_feed_dict(self, word, subwords, pos):
+    def get_word_stack_feed_dict(self, word, subwords, action_index):
         feed_dict = {
             word_ph: [self.params['word_map'].get(word, 0)],
             subword_list_ph: [self.params['subword_map'].get(subword, 0) for subword in subwords],
-            pos_ph: [self.params['pos_map'][pos]]
+            relation_action_ph: [action_index]
         }
         return feed_dict
 

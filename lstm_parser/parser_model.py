@@ -4,7 +4,7 @@ from math import sqrt
 from numpy import argmax, zeros
 
 # parameters
-dropout_prob = 0.7
+dropout_prob = 0.5
 n_kept_model = 1
 
 k_word_candidate = 3
@@ -19,7 +19,7 @@ word_vocab_size = 100004
 subword_vocab_size = 100004
 word_emb_dim = 64
 param_emb_dim = 30
-candidate_emb_dim = 20
+candidate_emb_dim = 30
 
 n_pos = 16
 n_bpos = 61
@@ -55,7 +55,7 @@ subword_emb_ph = tf.placeholder(tf.float32, [word_vocab_size, word_emb_dim])
 assign_word_embedding = tf.assign(word_lm_emb, word_emb_ph, validate_shape=False)
 assign_subword_embedding = tf.assign(subword_emb, subword_emb_ph, validate_shape=False)
 
-word_emb = tf.Variable(tf.random_uniform([word_vocab_size, candidate_emb_dim], minval=-0.1, maxval=0.1),
+word_emb = tf.Variable(tf.random_uniform([word_vocab_size, word_emb_dim], minval=-0.1, maxval=0.1),
                        name='embedding_word')
 bpos_emb = tf.Variable(tf.random_uniform([n_bpos, candidate_emb_dim], minval=-0.1, maxval=0.1), name='embedding_bpos')
 
@@ -117,7 +117,7 @@ with tf.name_scope('optimize'):
 
 # stacks' node
 with tf.name_scope('stack_config'):
-    stack_word_dim = word_emb_dim + subword_lstm_dim + param_emb_dim
+    stack_word_dim = word_emb_dim + word_emb_dim + param_emb_dim
     stack_word_weight = tf.Variable(tf.truncated_normal([stack_word_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
                                     name='weight_stack_word')
     stack_word_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_stack_word')
@@ -133,14 +133,16 @@ with tf.name_scope('action_config'):
     action_bias = tf.Variable(tf.zeros(lstm_dim), name='bias_action')
 
 with tf.name_scope('stack_word_node'):
-    mapped_word = tf.nn.embedding_lookup(word_lm_emb, word_ph)
-    mapped_subwords_s = tf.nn.embedding_lookup(subword_emb, subword_list_ph)
-    _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'lstm_subword')
+    mapped_word_lm = tf.nn.embedding_lookup(word_lm_emb, word_ph)
+    mapped_word = tf.nn.embedding_lookup(word_emb, word_ph)
+    # mapped_subwords_s = tf.nn.embedding_lookup(subword_emb, subword_list_ph)
+    # _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'lstm_subword')
+    #
     # mapped_pos = tf.nn.embedding_lookup(pos_emb, pos_ph)
-    # stack_concat_vec = tf.concat([mapped_word, subword_lstm, mapped_pos], axis=-1)
-
     mapped_action = tf.nn.embedding_lookup(action_emb, relation_action_ph)
-    stack_concat_vec = tf.concat([mapped_word, subword_lstm, mapped_action], axis=-1)
+
+    # stack_concat_vec = tf.concat([mapped_word_lm, mapped_word, mapped_pos], axis=-1)
+    stack_concat_vec = tf.concat([mapped_word_lm, mapped_word, mapped_action], axis=-1)
     stack_vec = tf.nn.relu(tf.matmul(stack_concat_vec, stack_word_weight) + stack_word_bias)
     # reshaped_stack_vec = tf.expand_dims(stack_vec, 0)
 
@@ -153,14 +155,14 @@ with tf.name_scope('action_node'):
 # initial stacks
 with tf.name_scope('initial_buffer'):
     mapped_subwords_b = tf.nn.embedding_lookup(subword_emb, subword_ph)
-    mapped_word_can = tf.nn.embedding_lookup(word_emb, word_candidates_ph)
+    mapped_word_can = tf.nn.embedding_lookup(word_lm_emb, word_candidates_ph)
     reshaped_word_can = tf.reshape(mapped_word_can, [tf.shape(mapped_word_can)[0], -1])
     mapped_bpos = tf.nn.embedding_lookup(bpos_emb, bpos_ph)
     reshaped_bpos = tf.reshape(mapped_bpos, [tf.shape(mapped_bpos)[0], -1])
 
     buffer_concat_vec = tf.concat([mapped_subwords_b, reshaped_word_can, reshaped_bpos], axis=-1)
 
-    input_dim = word_emb_dim + ((k_word_candidate + k_bpos_candidate) * candidate_emb_dim)
+    input_dim = word_emb_dim + (k_word_candidate * word_emb_dim) + (k_bpos_candidate * candidate_emb_dim)
     buffer_weight = tf.Variable(tf.truncated_normal([input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_buffer')
     buffer_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_buffer')
     buffer_list = tf.nn.relu(tf.matmul(buffer_concat_vec, buffer_weight) + buffer_bias)
@@ -294,6 +296,7 @@ class ParserModel:
             # for stack
             word_ph: [1],
             subword_list_ph: [1],
+            # pos_ph: [n_pos - 1],
             relation_action_ph: [82],  # SHIFT X
             # for action
             action_ph: [n_action - 1]

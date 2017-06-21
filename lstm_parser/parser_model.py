@@ -26,7 +26,7 @@ cell_dim = lstm_dim + word_emb_dim
 n_pos = 16
 n_bpos = 61
 # n_class = 106
-n_class = {'action': 4, 'pos': 16, 'dep_label': 39, 'word_label': 16}
+n_class = {'action': 4, 'pos': 16, 'dep_label': 39, 'word_label': 32}
 n_action = 107
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
@@ -308,7 +308,7 @@ class ParserModel:
             label_ph['action']: [action_label],
             label_ph['pos']: [pos_label],
             label_ph['dep_label']: [dep_label],
-            label_ph['word_label']: word_label,
+            label_ph['word_label']: [word_label],
             output_mask: feasible_actions
         }
 

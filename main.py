@@ -1,4 +1,11 @@
-import configparser
+from __future__ import print_function, division, unicode_literals
+from six import reraise as raise_
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
+
 import argparse
 import sys
 

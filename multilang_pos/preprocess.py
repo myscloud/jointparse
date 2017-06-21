@@ -1,8 +1,12 @@
 from collections import Counter
-from math import log2
+from math import log
 
 from tools.experiment_data import ExperimentData
 from tools.embedding_reader import NetworkParams
+
+
+def log2(x):
+    return log(x, 2)
 
 
 def get_log_freq(options):

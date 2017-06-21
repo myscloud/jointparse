@@ -32,7 +32,7 @@ action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
 # variables, placeholders, embeddings
 buffer = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer', trainable=False)
-buffer_out = tf.Variable(tf.zeros([1, cell_dim]), name='buffer_out', trainable=False)
+buffer_out = tf.Variable(tf.zeros([2, cell_dim]), name='buffer_out', trainable=False)
 stack = tf.Variable(tf.zeros([2, cell_dim]), name='stack', trainable=False)
 actions = tf.Variable(tf.zeros([1, lstm_dim]), name='action', trainable=False)
 
@@ -96,9 +96,9 @@ with tf.name_scope('input_layer'):
 
     # top stack/buffer configuration
     top_stack = tf.reshape(stack[-2:, :], [1, 2*cell_dim])
-    top_buffer = tf.reshape(buffer_out[0, :], [1, cell_dim])
+    top_buffer = tf.reshape(buffer_out[0:2, :], [1, 2*cell_dim])
     top_config = tf.concat([top_stack, top_buffer], axis=-1)
-    config_weight = tf.Variable(tf.truncated_normal([3*cell_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
+    config_weight = tf.Variable(tf.truncated_normal([4*cell_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
     config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
     input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
     input_out = tf.concat([input_parser, input_config], axis=-1)
@@ -133,7 +133,7 @@ with tf.name_scope('calculate_loss'):
         one_hot_labels = tf.one_hot(label_ph[output_name], n_class[output_name], on_value=1.0, off_value=0.0)
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped[output_name], labels=one_hot_labels))
         if output_name != 'action':
-            ce_loss *= 0.5
+            ce_loss *= 0.25
         loss += ce_loss
 
 with tf.name_scope('optimize'):
@@ -341,9 +341,9 @@ class ParserModel:
 
         feed_dict = {
             # for buffer
-            subword_ph: subwords + [3],
-            word_candidates_ph: [([3] * k_word_candidate)] + list(reversed(word_candidates)),
-            bpos_ph: [([n_bpos - 1] * k_bpos_candidate)] + list(reversed(bpos_candidates)),
+            subword_ph: subwords + [3, 3],
+            word_candidates_ph: [([3] * k_word_candidate)] + [([3] * k_word_candidate)] + list(reversed(word_candidates)),
+            bpos_ph: [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)] + list(reversed(bpos_candidates)),
             # for stack
             word_ph: [3],
             subword_list_ph: [3],

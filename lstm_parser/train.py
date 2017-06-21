@@ -34,8 +34,9 @@ def train(options):
                                        sentence['only_subword'])
 
             all_parser_loss = 0
-            for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
-                train_loss = model.calc_loss(gold_action, feasible_action)
+            for gold_action, word_label, feasible_action in \
+                    zip(sentence['gold_actions'], sentence['sentence_word_label'], sentence['feasible_actions']):
+                train_loss = model.calc_loss(gold_action, word_label, feasible_action)
                 all_parser_loss += train_loss
                 model.take_action(gold_action)
 
@@ -54,7 +55,7 @@ def train(options):
             evaluation_list.append(eval_dict)
 
         epoch_eval = get_epoch_evaluation(evaluation_list)
-        uas_score = epoch_eval['uas_accuracy']
+        uas_score = epoch_eval['uas_f1_score']
         f1_score = epoch_eval['word_f1_score']
         print('f1 score = ', f1_score, ', uas score = ', uas_score)
         print(epoch_eval)

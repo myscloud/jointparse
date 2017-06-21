@@ -36,6 +36,7 @@ def prepare_parser_data(options, params, data_types):
         sentence_info = dict()
         sentence_info['sentence_data'] = sentence_subword
         sentence_info['gold_data'] = gold_data
+        sentence_info['sentence_word_label'] = get_word_label(subword)
         sentence_info['gold_actions'] = params.map_list_with_params(action_list, 'action_map')
         sentence_info['feasible_actions'] = feasible_action_index
 
@@ -150,6 +151,19 @@ def get_gold_action_list(sentence_data, gold_data, subword_data):
 
 
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
+
+
+def get_word_label(gold_subword_data):
+    tag_count = 0
+    tag_list = [0]
+
+    for i in range(0, len(gold_subword_data)+1):
+        tag_count = (tag_count % 16) * 2
+        if (i < len(gold_subword_data) - 1) and (gold_subword_data[i].word_idx == gold_subword_data[i+1].word_idx):
+            tag_count += 1
+        tag_list.append(tag_count)
+
+    return tag_list[2:]
 
 
 def get_feasible_action_index(feasible_actions, reverse_map):

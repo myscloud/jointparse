@@ -26,7 +26,7 @@ cell_dim = lstm_dim + word_emb_dim
 n_pos = 16
 n_bpos = 61
 # n_class = 106
-n_class = {'action': 4, 'pos': 16, 'dep_label': 39}
+n_class = {'action': 4, 'pos': 16, 'dep_label': 39, 'word_label': 16}
 n_action = 107
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
@@ -54,7 +54,8 @@ output_mask = tf.placeholder(tf.float32, [None], name='placeholder_output_mask')
 label_ph = {
     'action': tf.placeholder(tf.int32, None, name='placeholder_action_label'),
     'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
-    'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label')
+    'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label'),
+    'word_label': tf.placeholder(tf.int32, None, name='placeholder_word_label')
 }
 
 word_lm_emb = tf.Variable(tf.zeros([word_vocab_size, word_emb_dim]), trainable=False, name='embedding_word_lm')
@@ -297,7 +298,7 @@ class ParserModel:
         self.grad_idx = [idx for idx, grad in enumerate(compute_grad) if grad[0] is not None]
         self.action_count = 0
 
-    def calc_loss(self, action_label, feasible_actions):
+    def calc_loss(self, action_label, word_label, feasible_actions):
         (action, params) = self.params['reverse_action_map'][action_label]
         action_label = action_name_list.index(action)
         pos_label = self.params['pos_map'][params] if action_label >= 2 else (n_class['pos'] - 1)
@@ -307,6 +308,7 @@ class ParserModel:
             label_ph['action']: [action_label],
             label_ph['pos']: [pos_label],
             label_ph['dep_label']: [dep_label],
+            label_ph['word_label']: word_label,
             output_mask: feasible_actions
         }
 

@@ -36,7 +36,7 @@ def prepare_parser_data(options, params, data_types):
         sentence_info = dict()
         sentence_info['sentence_data'] = sentence_subword
         sentence_info['gold_data'] = gold_data
-        sentence_info['sentence_word_label'] = get_word_label(subword)
+        # sentence_info['sentence_word_label'] = get_word_label(subword)
         sentence_info['gold_actions'] = params.map_list_with_params(action_list, 'action_map')
         sentence_info['feasible_actions'] = feasible_action_index
 

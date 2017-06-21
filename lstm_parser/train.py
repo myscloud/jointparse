@@ -34,9 +34,8 @@ def train(options):
                                        sentence['only_subword'])
 
             all_parser_loss = 0
-            for gold_action, word_label, feasible_action in \
-                    zip(sentence['gold_actions'], sentence['sentence_word_label'], sentence['feasible_actions']):
-                train_loss = model.calc_loss(gold_action, word_label, feasible_action)
+            for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
+                train_loss = model.calc_loss(gold_action, feasible_action)
                 all_parser_loss += train_loss
                 model.take_action(gold_action)
 
@@ -46,8 +45,6 @@ def train(options):
             if sent_idx % 50 == 0:
                 print('Parser ', sent_idx, ', loss = ', parser_loss)
 
-            if sent_idx > 100:
-                break
 
         epoch_loss = all_epoch_loss / len(training_data)
         print('** Epoch', epoch_count, ', loss = ', epoch_loss)

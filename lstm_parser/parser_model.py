@@ -143,7 +143,7 @@ with tf.name_scope('calculate_loss'):
         loss += ce_loss
 
 with tf.name_scope('optimize'):
-    optimizer = tf.train.AdamOptimizer(name='parser_opt')
+    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.95)g
     compute_grad = optimizer.compute_gradients(loss, var_list=tf.trainable_variables())
     computable_grad = [grad_info for grad_info in compute_grad if grad_info[0] is not None]
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]

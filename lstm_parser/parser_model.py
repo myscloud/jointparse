@@ -4,7 +4,7 @@ from math import sqrt
 from numpy import argmax, zeros
 
 # parameters
-dropout_prob = 0.5
+dropout_prob = 0.7
 n_kept_model = 1
 
 n_lstm_stack = 2
@@ -108,7 +108,7 @@ with tf.name_scope('input_layer'):
     # top stack/buffer configuration
     top_stack_rel = tf.reshape(stack[-2:, :], [1, 2*cell_dim])
     top_stack_word = tf.reshape(stack_out[-2:, :], [1, 2*stack_out_dim])
-    top_buffer = tf.reshape(buffer_out[0:2, :], [1, 2*buffer_out_dim])
+    top_buffer = tf.reshape(buffer_out[-2:, :], [1, 2*buffer_out_dim])
     top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer], axis=-1)
     config_input_dim = (2*cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim)
     # top_config = tf.concat([top_stack_rel, top_buffer], axis=-1)
@@ -152,7 +152,7 @@ with tf.name_scope('calculate_loss'):
         loss += ce_loss
 
 with tf.name_scope('optimize'):
-    optimizer = tf.train.AdamOptimizer(name='parser_opt')
+    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.95)
     compute_grad = optimizer.compute_gradients(loss, var_list=tf.trainable_variables())
     computable_grad = [grad_info for grad_info in compute_grad if grad_info[0] is not None]
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]
@@ -233,8 +233,8 @@ with tf.name_scope('add_action'):
     add_action = tf.assign(actions, action_vec)
 
 with tf.name_scope('buffer_remove'):
-    remove_buffer = tf.assign(buffer, buffer[1:, :], validate_shape=False)
-    remove_buffer_out = tf.assign(buffer_out, buffer_out[1:, :], validate_shape=False)
+    remove_buffer = tf.assign(buffer, buffer[:-1, :], validate_shape=False)
+    remove_buffer_out = tf.assign(buffer_out, buffer_out[:-1, :], validate_shape=False)
 
 with tf.name_scope('stack_shift'):
     shift_new_stack = tf.concat([stack, stack_vec], axis=0)
@@ -277,7 +277,7 @@ with tf.name_scope('stack_right_arc'):
     add_right_arc = tf.assign(stack, right_arc_new_stack, validate_shape=False)
 
 with tf.name_scope('calculate_lstm_output'):
-    calc_buffer_lstm = tf.assign(buffer_lstm_vec, tf.expand_dims(buffer[0, :], 0))
+    calc_buffer_lstm = tf.assign(buffer_lstm_vec, tf.expand_dims(buffer[-1, :], 0))
 
     stack_last_state = tuple([rnn.LSTMStateTuple(
         tf.reshape(stack_state[-1, i, 0, :], [1, lstm_dim]), tf.reshape(stack_state[-1, i, 1, :], [1, lstm_dim]))
@@ -364,9 +364,9 @@ class ParserModel:
 
         feed_dict = {
             # for buffer
-            subword_ph: subwords + [3, 3],
-            word_candidates_ph: word_candidates + [([3] * k_word_candidate)] + [([3] * k_word_candidate)],
-            bpos_ph: bpos_candidates + [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)],
+            subword_ph: [3, 3] + list(reversed(subwords)),
+            word_candidates_ph: [([3] * k_word_candidate)] + [([3] * k_word_candidate)] + list(reversed(word_candidates)),
+            bpos_ph: [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)] + list(reversed(bpos_candidates)),
             # for stack
             word_ph: [3],
             subword_list_ph: [3],

@@ -165,22 +165,22 @@ def get_word_label(gold_subword_data):
 
     return tag_list[2:]
 
-
-def get_feasible_action_index(feasible_actions, reverse_map):
-    index_list = list()
-    for action in action_name_list:
-        if action in feasible_actions:
-            index_list.append(1)
-        else:
-            index_list.append(0)
-    return index_list
-
-
+#
 # def get_feasible_action_index(feasible_actions, reverse_map):
 #     index_list = list()
-#     for i in range(len(reverse_map)-1):
-#         if reverse_map[i][0] in feasible_actions:
+#     for action in action_name_list:
+#         if action in feasible_actions:
 #             index_list.append(1)
 #         else:
 #             index_list.append(0)
 #     return index_list
+
+
+def get_feasible_action_index(feasible_actions, reverse_map):
+    index_list = list()
+    for i in range(len(reverse_map)-1):
+        if reverse_map[i][0] in feasible_actions:
+            index_list.append(1)
+        else:
+            index_list.append(0)
+    return index_list

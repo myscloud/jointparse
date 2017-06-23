@@ -29,7 +29,8 @@ stack_out_dim = (word_emb_dim * 2) + param_emb_dim
 n_pos = 16
 n_bpos = 61
 # n_class = 106
-n_class = {'action': 4, 'pos': 16, 'dep_label': 39}
+# n_class = {'action': 106, 'pos': 16, 'dep_label': 39}
+n_class = {'action': 106}
 n_action = 107
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
@@ -57,9 +58,9 @@ relation_action_ph = tf.placeholder(tf.int32, [None], name='placeholder_rel_acti
 action_ph = tf.placeholder(tf.int32, None, name='placeholder_action')
 output_mask = tf.placeholder(tf.float32, [None], name='placeholder_output_mask')
 label_ph = {
-    'action': tf.placeholder(tf.int32, None, name='placeholder_action_label'),
-    'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
-    'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label'),
+    'action': tf.placeholder(tf.int32, None, name='placeholder_action_label')
+    # 'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
+    # 'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label')
 }
 
 word_lm_emb = tf.Variable(tf.zeros([word_vocab_size, word_emb_dim]), trainable=False, name='embedding_word_lm')
@@ -318,15 +319,15 @@ class ParserModel:
         self.action_count = 0
 
     def calc_loss(self, action_label, feasible_actions):
-        (action, params) = self.params['reverse_action_map'][action_label]
-        action_label = action_name_list.index(action)
-        pos_label = self.params['pos_map'][params] if action_label >= 2 else (n_class['pos'] - 1)
-        dep_label = self.params['dep_label_map'][params] if action_label < 2 else (n_class['dep_label'] - 1)
+        # (action, params) = self.params['reverse_action_map'][action_label]
+        # action_label = action_name_list.index(action)
+        # pos_label = self.params['pos_map'][params] if action_label >= 2 else (n_class['pos'] - 1)
+        # dep_label = self.params['dep_label_map'][params] if action_label < 2 else (n_class['dep_label'] - 1)
 
         feed_dict = {
             label_ph['action']: [action_label],
-            label_ph['pos']: [pos_label],
-            label_ph['dep_label']: [dep_label],
+            # label_ph['pos']: [pos_label],
+            # label_ph['dep_label']: [dep_label],
             output_mask: feasible_actions
         }
 
@@ -339,13 +340,13 @@ class ParserModel:
     def predict(self, feasible_actions):
         predicted_outputs = self.session.run(predictions, feed_dict={output_mask: feasible_actions})
         max_action = argmax(predicted_outputs['action'])
-        action = action_name_list[max_action]
-        if max_action >= 2:
-            params = self.params['reverse_pos_map'][argmax(predicted_outputs['pos'][0][:-1])]
-        else:
-            params = self.params['reverse_dep_label_map'][argmax(predicted_outputs['dep_label'][0][:-1])]
-        action_index = self.params['action_map'][(action, params)]
-        return action_index
+        # action = action_name_list[max_action]
+        # if max_action >= 2:
+        #     params = self.params['reverse_pos_map'][argmax(predicted_outputs['pos'][0][:-1])]
+        # else:
+        #     params = self.params['reverse_dep_label_map'][argmax(predicted_outputs['dep_label'][0][:-1])]
+        # action_index = self.params['action_map'][(action, params)]
+        return max_action
 
     def save_model(self, model_path, global_step):
         saver.save(self.session, model_path, global_step=global_step)

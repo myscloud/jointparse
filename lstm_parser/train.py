@@ -45,9 +45,6 @@ def train(options):
             if sent_idx % 50 == 0:
                 print('Parser ', sent_idx, ', loss = ', parser_loss)
 
-            if sent_idx > 100:
-                break
-
         epoch_loss = all_epoch_loss / len(training_data)
         print('** Epoch', epoch_count, ', loss = ', epoch_loss)
 

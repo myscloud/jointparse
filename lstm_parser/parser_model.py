@@ -4,7 +4,7 @@ from math import sqrt
 from numpy import argmax, zeros
 
 # parameters
-dropout_prob = 0.7
+dropout_prob = 0.5
 n_kept_model = 1
 
 n_lstm_stack = 2
@@ -109,8 +109,10 @@ with tf.name_scope('input_layer'):
     top_stack_rel = tf.reshape(stack[-2:, :], [1, 2*cell_dim])
     top_stack_word = tf.reshape(stack_out[-2:, :], [1, 2*stack_out_dim])
     top_buffer = tf.reshape(buffer_out[0:2, :], [1, 2*buffer_out_dim])
-    top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer], axis=-1)
-    config_input_dim = (2*cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim)
+    # top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer], axis=-1)
+    # config_input_dim = (2*cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim)
+    top_config = tf.concat([top_stack_rel, top_buffer], axis=-1)
+    config_input_dim = (2 * cell_dim) + (2 * buffer_out_dim)
     config_weight = tf.Variable(tf.truncated_normal([config_input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
     config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
     input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
@@ -150,7 +152,7 @@ with tf.name_scope('calculate_loss'):
         loss += ce_loss
 
 with tf.name_scope('optimize'):
-    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.95)
+    optimizer = tf.train.AdamOptimizer(name='parser_opt')
     compute_grad = optimizer.compute_gradients(loss, var_list=tf.trainable_variables())
     computable_grad = [grad_info for grad_info in compute_grad if grad_info[0] is not None]
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]
@@ -363,8 +365,8 @@ class ParserModel:
         feed_dict = {
             # for buffer
             subword_ph: subwords + [3, 3],
-            word_candidates_ph: [([3] * k_word_candidate)] + [([3] * k_word_candidate)] + list(reversed(word_candidates)),
-            bpos_ph: [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)] + list(reversed(bpos_candidates)),
+            word_candidates_ph: word_candidates + [([3] * k_word_candidate)] + [([3] * k_word_candidate)],
+            bpos_ph: bpos_candidates + [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)],
             # for stack
             word_ph: [3],
             subword_list_ph: [3],

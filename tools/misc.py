@@ -14,7 +14,8 @@ def random_func(options):
     # from tools.preprocess import combine_two_files
     # combine_two_files('data/zh/test/zh-ud-test.data', 'data/zh/sota-output/zh-test-original-raw.output',
     #                   'data/zh/sota-output/zh-test-original.output')
-    write_subword_file(options)
+    # write_subword_file(options)
+    from_specific_to_ud(options)
 
 
 def write_embedding_vectors(options):
@@ -49,7 +50,7 @@ def collect_epoch_details(log_dir, output_file_dir):
 
 def from_specific_to_ud(options):
     from tools.preprocess import specific_to_ud
-    specific_to_ud('results/zh/pos/model12/test.ws', 'results/zh/pos/model12/zh-test.ud.ws')
+    specific_to_ud('results/zh/baseline/pos_results/test.ws', 'results/zh/baseline/conll/zh-test.ud.ws')
 
 
 def write_subword_file(options):

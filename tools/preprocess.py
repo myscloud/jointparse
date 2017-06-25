@@ -7,7 +7,8 @@ def specific_to_ud(file_path, out_file_path):
             if len(line) > 1 and line[0] != '#':
                 sent_count = 1
                 tokens = line.strip().split('\t')
-                out_file.write(tokens[0] + '\t' + tokens[1] + '\t_\t' + tokens[2] + '\t_\t_\t' + tokens[3] + '\t'
+                out_file.write(tokens[0] + '\t' + tokens[1] + '\t_\t' + tokens[2] + '\t' + tokens[2] +
+                               '\t_\t' + tokens[3] + '\t'
                                + tokens[4] + '\t_\t_\n')
 
             if line[0] == '#' and sent_count > 0:
@@ -58,7 +59,7 @@ def generate_subword_file(data_file_path, subword_out_file, subword_func=get_cha
 
     with open(subword_out_file, 'w') as subword_file:
         for sent_idx, sentence in enumerate(sent_data):
-            subword_file.write('#Sentence ' + str(sent_idx) + '\n')
+            subword_file.write('#Sentence ' + str(sent_idx + 1) + '\n')
             subword_count = 0
 
             for word_idx, word_info in enumerate(sentence):

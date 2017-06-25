@@ -36,18 +36,57 @@ def prepare_parser_data(options, params, data_types):
         sentence_info = dict()
         sentence_info['sentence_data'] = sentence_subword
         sentence_info['gold_data'] = gold_data
-        # sentence_info['sentence_word_label'] = get_word_label(subword)
         sentence_info['gold_actions'] = params.map_list_with_params(action_list, 'action_map')
         sentence_info['feasible_actions'] = feasible_action_index
+        sentence_info['buffer_packet'] = get_buffer_packet(gold_data, subword)
 
         subword_list = [subword_info.subword for subword_info in subword]
         sentence_info['only_subword'] = subword_list
         sentence_info['idx_subword'] = params.map_list_with_params(subword_list, 'subword_map', '<UNK>')
         sentence_info['idx_word_can'] = [params.map_list_with_params(sub_word_can, 'word_map', '<UNK>') for sub_word_can in word_can]
         sentence_info['idx_bpos_can'] = [params.map_list_with_params(sub_bpos_can, 'bpos_map') for sub_bpos_can in bpos_can]
+        sentence_info['idx_buffer_packet'] = get_mapped_buffer_packet(sentence_info['buffer_packet'], params)
         parser_data.append(sentence_info)
 
     return parser_data
+
+
+def get_buffer_packet(sent_data, subword_data):
+    all_words = list()
+    curr_subword = list()
+    curr_word_idx = 1
+
+    for subword_idx in range(0, len(subword_data) + 1):
+        subword_info = subword_data[subword_idx] if subword_idx < len(subword_data) else None
+        if subword_info is None or subword_info.word_idx != curr_word_idx:
+            word_info = {
+                'word': sent_data[curr_word_idx - 1].word,
+                'pos': sent_data[curr_word_idx - 1].pos,
+                'subword': curr_subword.copy()
+            }
+            all_words.append(word_info)
+            curr_subword = list()
+
+        if subword_info is None:
+            break
+
+        curr_word_idx = subword_info.word_idx
+        curr_subword.append(subword_info.subword)
+
+    return all_words
+
+
+def get_mapped_buffer_packet(buffer_packet, params):
+    mapped_list = list()
+    for word_info in buffer_packet:
+        mapped_info = {
+            'word': params.params['word_map'].get(word_info['word'], 0),
+            'pos': params.params['pos_map'].get(word_info['pos']),
+            'subword': params.map_list_with_params(word_info['subword'], 'subword_map', '<UNK>')
+        }
+        mapped_list.append(mapped_info)
+
+    return mapped_list
 
 
 def read_word_candidates(word_candidates_path, k_words):

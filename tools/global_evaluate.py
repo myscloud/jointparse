@@ -9,7 +9,6 @@ def evaluate_baseline(options):
     evaluation_list = list()
     sent_count = 1
     for predicted_sent, gold_sent in zip(predicted_data.data, gold_data.data):
-        print(sent_count)
         reformatted_sent = list()
         for word_info in predicted_sent:
             new_word = dict()

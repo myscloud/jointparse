@@ -379,11 +379,10 @@ class ParserModel:
         saver.save(self.session, model_path, global_step=global_step)
         print('Model at epoch', global_step, 'is saved.')
 
-    def initial_parser_model(self, subwords, word_candidates, bpos_candidates, real_subword,
-                             buffer_packet, idx_buffer_packet):
+    def initial_parser_model(self, subwords, word_candidates, bpos_candidates, real_subword):
         self.tos_subwords = list()
         self.subwords = real_subword
-        self.words = buffer_packet
+        # self.words = buffer_packet
         self.action_count = 0
 
         for grad_list in self.gradients:

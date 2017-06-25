@@ -6,7 +6,7 @@ from lstm_parser.parser import Parser
 def predict_and_get_evaluation(sentence, model, reverse_action_map):
     parser = Parser(sentence['sentence_data'])
     model.initial_parser_model(sentence['idx_subword'], sentence['idx_word_can'], sentence['idx_bpos_can'],
-                               sentence['only_subword'])
+                               sentence['only_subword'], sentence['buffer_packet'], sentence['idx_buffer_packet'])
     while not parser.is_parsing_terminated():
         feasible_actions = get_feasible_action_index(parser.get_feasible_actions(), reverse_action_map)
         action_index = model.predict(feasible_actions)

@@ -1,7 +1,8 @@
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
 from math import sqrt
-from numpy import argmax, zeros
+from numpy import argmax
+from copy import deepcopy
 
 # parameters
 dropout_prob = 0.7
@@ -385,7 +386,7 @@ class ParserModel:
     def initial_parser_model(self, subwords, word_candidates, bpos_candidates, real_subword,
                              buffer_packet, idx_buffer_packet):
         self.tos_subwords = list()
-        self.words = buffer_packet.copy()
+        self.words = deepcopy(buffer_packet)
         self.subwords = real_subword
         self.action_count = 0
 

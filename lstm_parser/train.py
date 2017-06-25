@@ -33,7 +33,6 @@ def train(options):
             model.initial_parser_model(sentence['idx_subword'], sentence['idx_word_can'], sentence['idx_bpos_can'],
                                        sentence['only_subword'], sentence['buffer_packet'], sentence['idx_buffer_packet'])
 
-            print(sentence['only_subword'])
             all_parser_loss = 0
             for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
                 train_loss = model.calc_loss(gold_action, feasible_action)

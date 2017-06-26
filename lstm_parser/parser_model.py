@@ -15,7 +15,7 @@ k_bpos_candidate = 3
 # dimension
 lstm_dim = 100
 subword_lstm_dim = 64
-output_dim = 20
+output_dim = 50
 
 word_vocab_size = 100004
 subword_vocab_size = 100004
@@ -26,6 +26,7 @@ candidate_emb_dim = 30
 cell_dim = lstm_dim + word_emb_dim
 buffer_out_dim = word_emb_dim + (k_word_candidate * word_emb_dim) + (k_bpos_candidate * candidate_emb_dim)
 stack_out_dim = (word_emb_dim * 2) + param_emb_dim
+action_node_dim = stack_out_dim + param_emb_dim
 
 n_pos = 16
 n_bpos = 61
@@ -184,25 +185,35 @@ with tf.name_scope('stack_config'):
     stack_rel_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_stack_rel')
 
 with tf.name_scope('action_config'):
-    action_weight = tf.Variable(tf.truncated_normal([param_emb_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
+    action_weight = tf.Variable(tf.truncated_normal([action_node_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
                                 name='weight_action')
     action_bias = tf.Variable(tf.zeros(lstm_dim), name='bias_action')
 
-with tf.name_scope('stack_word_node'):
+with tf.name_scope('word_node'):
     mapped_word_lm = tf.nn.embedding_lookup(word_lm_emb, word_ph)
     mapped_subwords_s = tf.nn.embedding_lookup(subword_emb, subword_list_ph)
     _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'lstm_subword')
     mapped_pos = tf.reshape(tf.nn.embedding_lookup(pos_emb, pos_ph), [1, param_emb_dim])
+    s_mapped_action = tf.reshape(tf.nn.embedding_lookup(action_emb, relation_action_ph), [1, param_emb_dim])
 
-    stack_concat_vec = tf.concat([mapped_word_lm, subword_lstm, mapped_pos], axis=-1)
+    stack_concat_vec = tf.concat([mapped_word_lm, subword_lstm, s_mapped_action], axis=-1)
     assign_stack_out = tf.assign(stack_out, tf.concat([stack_out, stack_concat_vec], axis=0), validate_shape=False)
 
     stack_composed_vec = tf.nn.relu(tf.matmul(stack_concat_vec, stack_word_weight) + stack_word_bias)
     stack_vec = tf.concat([stack_composed_vec, mapped_word_lm], axis=-1)
 
+    # for buffer word
+    buffer_word_weight = tf.Variable(tf.truncated_normal([stack_word_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
+                                     name='weight_buffer_word')
+    buffer_word_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_buffer_word')
+    buffer_word_concat_vec = tf.concat([mapped_word_lm, subword_lstm, mapped_pos], axis=-1)
+    buffer_composed_vec = tf.nn.relu(tf.matmul(buffer_word_concat_vec, buffer_word_weight) + buffer_word_bias)
+    buffer_word_vec = tf.concat([buffer_composed_vec, mapped_word_lm], axis=-1)
+
 with tf.name_scope('action_node'):
-    mapped_action = tf.nn.embedding_lookup(action_emb, action_ph)
-    reshaped_action = tf.reshape(mapped_action, [1, param_emb_dim])
+    mapped_action = tf.reshape(tf.nn.embedding_lookup(action_emb, action_ph), [1, param_emb_dim])
+    action_node_vec = tf.concat([tf.reshape(stack_out[-1, :], [1, stack_out_dim]), mapped_action], axis=-1)
+    reshaped_action = tf.reshape(action_node_vec, [1, action_node_dim])
     action_vec = tf.nn.relu(tf.matmul(reshaped_action, action_weight) + action_bias)
 
 # initial stacks
@@ -226,9 +237,9 @@ with tf.name_scope('initial_buffer'):
     initial_buffer = tf.assign(buffer, reshaped_buffer, validate_shape=False)
 
 with tf.name_scope('buffer_word'):
-    init_buffer_word_out = tf.assign(buffer_word_out, stack_vec, validate_shape=False)
+    init_buffer_word_out = tf.assign(buffer_word_out, buffer_word_vec, validate_shape=False)
     init_buffer_word_state = tf.assign(buffer_word_state, tf.zeros([1, n_lstm_stack, 2, lstm_dim]), validate_shape=False)
-    assign_buffer_word_out = tf.assign(buffer_word_out, tf.concat([buffer_word_out, stack_vec], axis=0),
+    assign_buffer_word_out = tf.assign(buffer_word_out, tf.concat([buffer_word_out, buffer_word_vec], axis=0),
                                        validate_shape=False)
 
     buffer_word_last_state = tuple([rnn.LSTMStateTuple(
@@ -417,7 +428,7 @@ class ParserModel:
             word_ph: [3],
             subword_list_ph: [3],
             # pos_ph: [n_pos - 1],
-            pos_ph: [n_pos - 1],  # <PAD>
+            relation_action_ph: [82],  # <PAD>
             # for action
             action_ph: [n_action - 1]
         }
@@ -428,7 +439,7 @@ class ParserModel:
         root_feed_dict = {
             word_ph: [1],
             subword_list_ph: [1],
-            pos_ph: [n_pos - 1]
+            relation_action_ph: [82]  # SHIFT X
         }
         self.session.run([shift_to_stack, assign_stack_out], feed_dict=root_feed_dict)
         self.calculate_lstm_vec()
@@ -438,9 +449,9 @@ class ParserModel:
 
         # generate new stack cell depends on action
         if action == 'SHIFT':
-            self.take_action_shift(params)
+            self.take_action_shift(action_index)
         elif action == 'APPEND':
-            self.take_action_append(params)
+            self.take_action_append(action_index)
         elif action == 'LEFT-ARC':
             self.take_action_left_arc(action_index)
         else:
@@ -471,21 +482,21 @@ class ParserModel:
                        calc_buffer_out_lstm]
         self.session.run(action_list)
 
-    def take_action_shift(self, pos_tag):
+    def take_action_shift(self, action_index):
         word = self.subwords[0]
         self.tos_subwords = [word]
         self.subwords = self.subwords[1:]
 
-        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, action_index)
         self.session.run([remove_buffer, remove_buffer_out, shift_to_stack, assign_stack_out], feed_dict=feed_dict)
 
-    def take_action_append(self, pos_tag):
+    def take_action_append(self, action_index):
         subword = self.subwords[0]
         self.tos_subwords.append(subword)
         word = ''.join(self.tos_subwords)
         self.subwords = self.subwords[1:]
 
-        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, pos_tag)
+        feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, action_index)
         action_list = [remove_buffer, remove_buffer_out, append_to_stack, append_assign_new_state, append_assign_stack_out]
         self.session.run(action_list, feed_dict=feed_dict)
 
@@ -497,10 +508,10 @@ class ParserModel:
         action_list = [add_right_arc, ra_assign_new_state, ra_assign_stack_out]
         self.session.run(action_list, feed_dict={relation_action_ph: [action_index]})
 
-    def get_word_stack_feed_dict(self, word, subwords, pos_tag):
+    def get_word_stack_feed_dict(self, word, subwords, action_index):
         feed_dict = {
             word_ph: [self.params['word_map'].get(word, 0)],
             subword_list_ph: [self.params['subword_map'].get(subword, 0) for subword in subwords],
-            pos_ph: self.params['pos_map'].get(pos_tag)
+            relation_action_ph: [action_index]
         }
         return feed_dict

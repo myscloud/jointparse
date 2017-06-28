@@ -27,6 +27,7 @@ cell_dim = lstm_dim + word_emb_dim
 buffer_out_dim = word_emb_dim + (k_word_candidate * word_emb_dim) + (k_bpos_candidate * candidate_emb_dim)
 stack_out_dim = (word_emb_dim * 2) + param_emb_dim
 action_node_dim = stack_out_dim + param_emb_dim
+rel_dim = word_emb_dim + lstm_dim + param_emb_dim
 
 n_pos = 16
 n_bpos = 61
@@ -53,6 +54,10 @@ action_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_action'
 buffer_word_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_buffer_out', trainable=False)
 stack_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_stack', trainable=False)
 actions_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_actions', trainable=False)
+rel_state = tf.Variable(tf.zeros([2, n_lstm_stack, 2, lstm_dim]), name='state_rel', trainable=False)
+
+tmp_stack_rel = tf.Variable(tf.zeros([1, rel_dim + word_emb_dim]), name='tmp_stack_rel', trainable=False)
+tmp_rel_state = tf.Variable(tf.zeros([n_lstm_stack, 2, lstm_dim]), name='tmp_rel_state', trainable=False)
 
 subword_ph = tf.placeholder(tf.int32, [None], name='placeholder_subword')
 word_candidates_ph = tf.placeholder(tf.int32, [None, None], name='placeholder_word_candidates')
@@ -277,6 +282,8 @@ with tf.name_scope('buffer_remove'):
 with tf.name_scope('stack_shift'):
     shift_new_stack = tf.concat([stack, stack_vec], axis=0)
     shift_to_stack = tf.assign(stack, shift_new_stack, validate_shape=False)
+    shift_rel_state = tf.assign(rel_state, tf.concat([rel_state, tf.zeros([1, n_lstm_stack, 2, lstm_dim])], axis=0),
+                                validate_shape=False)
 
 with tf.name_scope('stack_append'):
     append_assign_new_state = tf.assign(stack_state, stack_state[:-1, :, :, :], validate_shape=False)
@@ -285,38 +292,65 @@ with tf.name_scope('stack_append'):
     append_new_stack = tf.concat([stack[:-1, :], stack_vec], axis=0)
     append_to_stack = tf.assign(stack, append_new_stack, validate_shape=False)
 
+
+def get_relation_lstm(composed_vec, state):
+    top_rel_vec = tf.reshape(composed_vec, [1, 1, rel_dim])
+    rel_last_state = tuple([rnn.LSTMStateTuple(
+        tf.reshape(state[i, 0, :], [1, lstm_dim]), tf.reshape(state[i, 1, :], [1, lstm_dim]))
+                            for i in range(n_lstm_stack)])
+    _, rel_lstm_out, new_rel_state = nn_run_lstm_input(top_rel_vec, lstm_dim, 'rel_lstm', init_state=rel_last_state)
+    return rel_lstm_out, new_rel_state
+
+
 with tf.name_scope('stack_left_arc'):
     left_dep_node = tf.reshape(stack[-2, 0:lstm_dim], [1, lstm_dim])
-    right_head_node = tf.reshape(stack[-1, 0:lstm_dim], [1, lstm_dim])
-    la_mapped_action = tf.nn.embedding_lookup(action_emb, relation_action_ph)
-    left_arc_concat = tf.concat([right_head_node, left_dep_node, la_mapped_action], axis=-1)
-    left_arc_composed = tf.nn.tanh(tf.matmul(left_arc_concat, stack_rel_weight) + stack_rel_bias)
     right_head_node_word = tf.reshape(stack[-1, lstm_dim:], [1, word_emb_dim])
-    left_arc_vec = tf.concat([left_arc_composed, right_head_node_word], axis=-1)
+    # right_head_node = tf.reshape(stack[-1, 0:lstm_dim], [1, lstm_dim])
+    la_mapped_action = tf.nn.embedding_lookup(action_emb, relation_action_ph)
+    left_arc_concat = tf.concat([right_head_node_word, left_dep_node, la_mapped_action], axis=-1)
+    # left_arc_composed, la_rel_state = get_relation_lstm(left_arc_concat, rel_state[-1, :])
+    # la_assign_rel_state = tf.assign(rel_state, tf.concat([rel_state[:-2, :], la_rel_state], axis=0),
+    #                                 validate_shape=False)
+
+    left_arc_vec = tf.concat([left_arc_concat, right_head_node_word], axis=-1)
+    # left_arc_new_stack = tf.concat([stack[:-2, :], left_arc_vec], axis=0)
+    add_left_arc = tf.assign(tmp_stack_rel, left_arc_vec, validate_shape=False)
+    la_add_tmp_state = tf.assign(tmp_rel_state, rel_state[-1, :], validate_shape=False)
 
     la_new_stack_out = tf.concat([stack_out[:-2, :], tf.expand_dims(stack_out[-1, :], 0)], axis=0)
     la_assign_stack_out = tf.assign(stack_out, la_new_stack_out, validate_shape=False)
     la_assign_new_state = tf.assign(stack_state, stack_state[:-2, :, :, :], validate_shape=False)
-    left_arc_new_stack = tf.concat([stack[:-2, :], left_arc_vec], axis=0)
-    add_left_arc = tf.assign(stack, left_arc_new_stack, validate_shape=False)
 
 with tf.name_scope('stack_right_arc'):
-    left_head_node = tf.reshape(stack[-2, 0:lstm_dim], [1, lstm_dim])
+    left_head_node_word = tf.reshape(stack[-2, lstm_dim:], [1, word_emb_dim])
     right_dep_node = tf.reshape(stack[-1, 0:lstm_dim], [1, lstm_dim])
     ra_mapped_action = tf.nn.embedding_lookup(action_emb, relation_action_ph)
-    right_arc_concat = tf.concat([left_head_node, right_dep_node, ra_mapped_action], axis=-1)
-    right_arc_composed = tf.nn.tanh(tf.matmul(right_arc_concat, stack_rel_weight) + stack_rel_bias)
-    left_head_node_word = tf.reshape(stack[-2, lstm_dim:], [1, word_emb_dim])
-    right_arc_vec = tf.concat([right_arc_composed, left_head_node_word], axis=-1)
+    right_arc_concat = tf.concat([left_head_node_word, right_dep_node, ra_mapped_action], axis=-1)
+    # right_arc_composed, ra_rel_state = get_relation_lstm(right_arc_concat, rel_state[-2, :])
+    # ra_assign_rel_state = tf.assign(rel_state, tf.concat([rel_state[:-2, :], ra_rel_state], axis=0),
+    #                                 validate_shape=False)
+
+    right_arc_vec = tf.concat([right_arc_concat, left_head_node_word], axis=-1)
+    # right_arc_new_stack = tf.concat([stack[:-2, :], right_arc_vec], axis=0)
+    add_right_arc = tf.assign(tmp_stack_rel, right_arc_vec, validate_shape=False)
+    ra_add_tmp_state = tf.assign(tmp_rel_state, rel_state[-2, :], validate_shape=False)
 
     ra_assign_stack_out = tf.assign(stack_out, stack_out[:-1, :], validate_shape=False)
     ra_assign_new_state = tf.assign(stack_state, stack_state[:-2, :, :, :], validate_shape=False)
-    right_arc_new_stack = tf.concat([stack[:-2, :], right_arc_vec], axis=0)
-    add_right_arc = tf.assign(stack, right_arc_new_stack, validate_shape=False)
 
 with tf.name_scope('calculate_lstm_output'):
     calc_buffer_lstm = tf.assign(buffer_lstm_vec, tf.expand_dims(buffer[-1, :], 0))
     calc_buffer_out_lstm = tf.assign(buffer_out_lstm_vec, tf.expand_dims(buffer_word[-1, :], 0))
+
+    top_rel_vec = tf.reshape(tmp_stack_rel[0, 0:rel_dim], [1, 1, rel_dim])
+    rel_last_state = tuple([rnn.LSTMStateTuple(
+        tf.reshape(tmp_rel_state[i, 0, :], [1, lstm_dim]), tf.reshape(tmp_rel_state[i, 1, :], [1, lstm_dim]))
+                            for i in range(n_lstm_stack)])
+    _, rel_lstm_out, new_rel_state = nn_run_lstm_input(top_rel_vec, lstm_dim, 'rel_lstm', init_state=rel_last_state)
+    new_stack = tf.concat([rel_lstm_out, tf.reshape(tmp_stack_rel[0, -word_emb_dim:], [1, word_emb_dim])], axis=-1)
+    assign_new_stack = tf.assign(stack, tf.concat([stack[:-2, :], new_stack], axis=0), validate_shape=False)
+    assign_new_stack_state = tf.assign(rel_state, tf.concat([rel_state[:-2, :], new_rel_state], axis=0),
+                                       validate_shape=False)
 
     stack_last_state = tuple([rnn.LSTMStateTuple(
         tf.reshape(stack_state[-1, i, 0, :], [1, lstm_dim]), tf.reshape(stack_state[-1, i, 1, :], [1, lstm_dim]))
@@ -333,6 +367,7 @@ with tf.name_scope('calculate_lstm_output'):
     _, action_out, new_action_state = nn_run_lstm_input(reshaped_actions, lstm_dim, 'action_lstm', init_state=action_last_state)
     calc_action_lstm = tf.assign(action_lstm_vec, action_out)
     assign_action_state = tf.assign(actions_state, new_action_state)
+
 
 init = tf.global_variables_initializer()
 saver = tf.train.Saver(max_to_keep=n_kept_model)
@@ -488,7 +523,8 @@ class ParserModel:
         self.subwords = self.subwords[1:]
 
         feed_dict = self.get_word_stack_feed_dict(word, self.tos_subwords, action_index)
-        self.session.run([remove_buffer, remove_buffer_out, shift_to_stack, assign_stack_out], feed_dict=feed_dict)
+        action_list = [remove_buffer, remove_buffer_out, shift_to_stack, assign_stack_out, shift_rel_state]
+        self.session.run(action_list, feed_dict=feed_dict)
 
     def take_action_append(self, action_index):
         subword = self.subwords[0]
@@ -501,11 +537,13 @@ class ParserModel:
         self.session.run(action_list, feed_dict=feed_dict)
 
     def take_action_left_arc(self, action_index):
-        action_list = [add_left_arc, la_assign_new_state, la_assign_stack_out]
+        action_list = [add_left_arc, la_add_tmp_state, la_assign_new_state, la_assign_stack_out,
+                       assign_new_stack, assign_new_stack_state]
         self.session.run(action_list, feed_dict={relation_action_ph: [action_index]})
 
     def take_action_right_arc(self, action_index):
-        action_list = [add_right_arc, ra_assign_new_state, ra_assign_stack_out]
+        action_list = [add_right_arc, ra_add_tmp_state, ra_assign_new_state, ra_assign_stack_out,
+                       assign_new_stack, assign_new_stack_state]
         self.session.run(action_list, feed_dict={relation_action_ph: [action_index]})
 
     def get_word_stack_feed_dict(self, word, subwords, action_index):

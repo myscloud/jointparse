@@ -22,6 +22,7 @@ from bpos_tag.predict import predict as bpos_predict
 # from parse.train import train as parser_train
 # from parse.predict import predict_data_set
 from lstm_parser.train import train as parser_train
+from lstm_parser.predict import predict as parser_predict
 from word_seg.preprocess import prepare_transition_prob
 from word_seg.train import train as ws_train
 from word_seg.predict import predict as ws_predict
@@ -45,6 +46,8 @@ parser.add_argument('--predict_pos', action='store_true', dest='is_pos_predict',
                     help='Test POS tagging on test data')
 parser.add_argument('--train_parser', action='store_true', dest='is_parser_train',
                     help='Train joint parser')
+parser.add_argument('--predict_parser', action='store_true', dest='is_parser_predict',
+                    help='Run parser on a trained model')
 parser.add_argument('--random', action='store_true', dest='is_random',
                     help='Random function, debug mode only :)')
 parser.add_argument('--preprocess_pos', action='store_true', dest='is_pos_preprocess',
@@ -76,7 +79,8 @@ parser_function_map = {
     'is_ws_predict': ws_predict,
     'is_evaluate': evaluate_baseline,
     'is_bpos_train': bpos_train,
-    'is_bpos_predict': bpos_predict
+    'is_bpos_predict': bpos_predict,
+    'is_parser_predict': parser_predict
 }
 
 

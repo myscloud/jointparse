@@ -191,9 +191,14 @@ with tf.name_scope('stack_config'):
     stack_rel_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_stack_rel')
 
 with tf.name_scope('action_config'):
-    action_weight = tf.Variable(tf.truncated_normal([action_node_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
+    action_weight_rel = tf.Variable(tf.truncated_normal([action_node_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)),
                                 name='weight_action')
-    action_bias = tf.Variable(tf.zeros(lstm_dim), name='bias_action')
+    action_bias_rel = tf.Variable(tf.zeros(lstm_dim), name='bias_action')
+
+    action_word_dim = stack_out_dim + param_emb_dim
+    action_weight_word = tf.Variable(tf.truncated_normal([action_word_dim, lstm_dim], stddev=1.0 / sqrt(lstm_dim)),
+                                     name='weight_action')
+    action_bias_word = tf.Variable(tf.zeros(lstm_dim), name='bias_action')
 
 with tf.name_scope('word_node'):
     mapped_word_lm = tf.nn.embedding_lookup(word_lm_emb, word_ph)
@@ -217,7 +222,12 @@ with tf.name_scope('word_node'):
     buffer_word_vec = tf.concat([buffer_composed_vec, mapped_word_lm], axis=-1)
 
 with tf.name_scope('action_node'):
-    action_vec = tf.nn.relu(tf.matmul(tmp_action_node, action_weight) + action_bias)
+    action_vec_rel = tf.nn.relu(tf.matmul(tmp_action_node, action_weight_rel) + action_bias_rel)
+
+    mapped_action = tf.reshape(tf.nn.embedding_lookup(action_emb, action_ph), [1, param_emb_dim])
+    action_node_vec = tf.concat([tf.reshape(stack_out[-1, :], [1, stack_out_dim]), mapped_action], axis=-1)
+    reshaped_action = tf.reshape(action_node_vec, [1, stack_out_dim + param_emb_dim])
+    action_vec_word = tf.nn.relu(tf.matmul(reshaped_action, action_weight_word) + action_bias_word)
 
 # initial stacks
 with tf.name_scope('initial_buffer'):
@@ -266,12 +276,13 @@ with tf.name_scope('initial_stack'):
     init_stack_state = tf.assign(stack_state, tf.zeros([1, n_lstm_stack, 2, lstm_dim]), validate_shape=False)
 
 with tf.name_scope('initial_action_stack'):
-    init_action = tf.assign(actions, action_vec, validate_shape=False)
+    init_action = tf.assign(actions, action_vec_word, validate_shape=False)
     init_action_state = tf.assign(actions_state, tf.zeros([1, n_lstm_stack, 2, lstm_dim]), validate_shape=False)
 
 # parser operation
 with tf.name_scope('add_action'):
-    add_action = tf.assign(actions, action_vec)
+    add_action_word = tf.assign(actions, action_vec_word)
+    add_action_rel = tf.assign(actions, action_vec_rel)
 
 with tf.name_scope('buffer_remove'):
     remove_buffer = tf.assign(buffer, buffer[:-1, :], validate_shape=False)
@@ -480,7 +491,9 @@ class ParserModel:
             self.take_action_right_arc(action_index)
 
         if action == 'LEFT-ARC' or action == 'RIGHT-ARC':
-            self.session.run(add_action, feed_dict={action_ph: action_index})
+            self.session.run(add_action_rel, feed_dict={action_ph: action_index})
+        else:
+            self.session.run(add_action_word, feed_dict={action_ph: action_index})
 
         if action == 'SHIFT' or action == 'APPEND':
             self.session.run([remove_buffer_word, remove_buffer_word_out, remove_buffer_word_state])

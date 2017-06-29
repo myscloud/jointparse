@@ -38,24 +38,32 @@ n_action = 107
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
 
 # variables, placeholders, embeddings
-buffer = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer', trainable=False)
-buffer_word = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer_word', trainable=False)
-stack = tf.Variable(tf.zeros([3, stack_cell_dim]), name='stack', trainable=False)
-actions = tf.Variable(tf.zeros([1, lstm_dim]), name='action', trainable=False)
+with tf.variable_scope('non_trainable'):
+    buffer = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer', trainable=False)
+    buffer_word = tf.Variable(tf.zeros([1, lstm_dim]), name='buffer_word', trainable=False)
+    stack = tf.Variable(tf.zeros([3, stack_cell_dim]), name='stack', trainable=False)
+    actions = tf.Variable(tf.zeros([1, lstm_dim]), name='action', trainable=False)
 
-buffer_word_out = tf.Variable(tf.zeros([2, cell_dim]), name='buffer_word_out', trainable=False)
-buffer_out = tf.Variable(tf.zeros([2, buffer_out_dim]), name='buffer_out', trainable=False)
-stack_out = tf.Variable(tf.zeros([3, stack_out_dim]), name='stack_out', trainable=False)
+    buffer_word_out = tf.Variable(tf.zeros([2, cell_dim]), name='buffer_word_out', trainable=False)
+    buffer_out = tf.Variable(tf.zeros([2, buffer_out_dim]), name='buffer_out', trainable=False)
+    stack_out = tf.Variable(tf.zeros([3, stack_out_dim]), name='stack_out', trainable=False)
 
-buffer_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_buffer', trainable=False)
-buffer_out_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_buffer_out', trainable=False)
-stack_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_stack', trainable=False)
-stack_out_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_stack_out', trainable=False)
-action_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_action', trainable=False)
-buffer_word_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_buffer_out', trainable=False)
-stack_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_stack', trainable=False)
-stack_out_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_stack_out', trainable=False)
-actions_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_actions', trainable=False)
+    buffer_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_buffer', trainable=False)
+    buffer_out_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_buffer_out', trainable=False)
+    stack_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_stack', trainable=False)
+    stack_out_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_stack_out', trainable=False)
+    action_lstm_vec = tf.Variable(tf.zeros([1, lstm_dim]), name='lstm_output_action', trainable=False)
+    buffer_word_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_buffer_out', trainable=False)
+    stack_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_stack', trainable=False)
+    stack_out_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_stack_out', trainable=False)
+    actions_state = tf.Variable(tf.zeros([1, n_lstm_stack, 2, lstm_dim]), name='state_actions', trainable=False)
+
+    word_lm_emb = tf.Variable(tf.zeros([word_vocab_size, word_emb_dim]), trainable=False, name='embedding_word_lm')
+    subword_emb = tf.Variable(tf.zeros([subword_vocab_size, word_emb_dim]), trainable=False, name='embedding_subword')
+    word_emb_ph = tf.placeholder(tf.float32, [word_vocab_size, word_emb_dim])
+    subword_emb_ph = tf.placeholder(tf.float32, [word_vocab_size, word_emb_dim])
+    assign_word_embedding = tf.assign(word_lm_emb, word_emb_ph, validate_shape=False)
+    assign_subword_embedding = tf.assign(subword_emb, subword_emb_ph, validate_shape=False)
 
 subword_ph = tf.placeholder(tf.int32, [None], name='placeholder_subword')
 word_candidates_ph = tf.placeholder(tf.int32, [None, None], name='placeholder_word_candidates')
@@ -71,13 +79,6 @@ label_ph = {
     'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
     'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label')
 }
-
-word_lm_emb = tf.Variable(tf.zeros([word_vocab_size, word_emb_dim]), trainable=False, name='embedding_word_lm')
-subword_emb = tf.Variable(tf.zeros([subword_vocab_size, word_emb_dim]), trainable=False, name='embedding_subword')
-word_emb_ph = tf.placeholder(tf.float32, [word_vocab_size, word_emb_dim])
-subword_emb_ph = tf.placeholder(tf.float32, [word_vocab_size, word_emb_dim])
-assign_word_embedding = tf.assign(word_lm_emb, word_emb_ph, validate_shape=False)
-assign_subword_embedding = tf.assign(subword_emb, subword_emb_ph, validate_shape=False)
 
 word_emb = tf.Variable(tf.random_uniform([word_vocab_size, word_emb_dim], minval=-0.1, maxval=0.1),
                        name='embedding_word')
@@ -354,7 +355,9 @@ with tf.name_scope('calculate_lstm_output'):
     assign_action_state = tf.assign(actions_state, new_action_state, validate_shape=False)
 
 init = tf.global_variables_initializer()
-saver = tf.train.Saver(max_to_keep=n_kept_model)
+init_non_trainable = tf.variables_initializer(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='non_trainable'),
+                                              name='init_non_train')
+saver = tf.train.Saver(max_to_keep=n_kept_model, var_list=tf.trainable_variables())
 
 
 class ParserModel:
@@ -362,13 +365,14 @@ class ParserModel:
         self.session = tf.Session()
         if model_path is not None:
             saver.restore(self.session, model_path)
+            self.sess.run(init_non_trainable)
         else:
-            if embeddings is None:
-                raise Exception('You have to feed embeddings to model if no model_path is identified.')
-
-            feed_dict = {word_emb_ph: embeddings['word'], subword_emb_ph: embeddings['subword']}
             self.session.run(init)
-            self.session.run([assign_word_embedding, assign_subword_embedding], feed_dict=feed_dict)
+
+        if embeddings is None:
+            raise Exception('You have to feed embeddings to model if no model_path is identified.')
+        feed_dict = {word_emb_ph: embeddings['word'], subword_emb_ph: embeddings['subword']}
+        self.session.run([assign_word_embedding, assign_subword_embedding], feed_dict=feed_dict)
 
         self.params = params
         self.words = list()

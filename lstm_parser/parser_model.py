@@ -365,7 +365,7 @@ class ParserModel:
         self.session = tf.Session()
         if model_path is not None:
             saver.restore(self.session, model_path)
-            self.sess.run(init_non_trainable)
+            self.session.run(init_non_trainable)
         else:
             self.session.run(init)
 

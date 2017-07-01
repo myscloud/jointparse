@@ -36,11 +36,10 @@ def train(options):
             all_parser_loss = 0
             for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
                 train_loss = model.calc_loss(gold_action, feasible_action)
-                model.train()
                 all_parser_loss += train_loss
                 model.take_action(gold_action)
 
-            # model.train()
+            model.train()
             parser_loss = all_parser_loss / len(sentence['gold_actions'])
             all_epoch_loss += parser_loss
             if sent_idx % 50 == 0:

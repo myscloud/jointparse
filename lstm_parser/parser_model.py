@@ -1,11 +1,13 @@
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
+from tensorflow.contrib.keras.python.keras.layers import GaussianNoise
 from math import sqrt
 from numpy import argmax
 from copy import deepcopy
 
 # parameters
 dropout_prob = 0.8
+noise_std = 0.2
 n_kept_model = 1
 
 n_lstm_stack = 2
@@ -127,11 +129,12 @@ with tf.name_scope('input_layer'):
     config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
     input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
     # input_out = tf.concat([input_concat_vec, top_config], axis=-1)
-    input_out = tf.concat([input_parser, input_config], axis=-1)
+    input_out_dim = 2 * lstm_dim
+    input_out = tf.concat([input_parser, input_config], axis=-1) + \
+                tf.random_normal([1, input_out_dim], mean=0.0, stddev=noise_std)
 
 with tf.name_scope('hidden_layer'):
     # input_out_dim = input_dim + config_input_dim
-    input_out_dim = 2*lstm_dim
     hidden_weight = tf.Variable(tf.truncated_normal([input_out_dim, output_dim], stddev=1.0/sqrt(output_dim)),
                                 name='weight_hidden')
     hidden_bias = tf.Variable(tf.truncated_normal([output_dim]), name='bias_hidden')

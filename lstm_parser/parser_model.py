@@ -111,9 +111,9 @@ with tf.name_scope('input_layer'):
     input_concat_vec = tf.concat([stack_lstm_vec, stack_out_lstm_vec, buffer_lstm_vec, buffer_out_lstm_vec, action_lstm_vec], axis=-1)
     input_dim = 5 * lstm_dim
 
-    # input_weight = tf.Variable(tf.truncated_normal([input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
-    # input_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_input')
-    # input_parser = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
+    input_weight = tf.Variable(tf.truncated_normal([input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
+    input_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_input')
+    input_parser = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
 
     # top stack/buffer configuration
     top_stack_rel = tf.reshape(stack[-2:, :], [1, 2*stack_cell_dim])
@@ -123,14 +123,15 @@ with tf.name_scope('input_layer'):
     top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer, top_buffer_word], axis=-1)
     config_input_dim = (2*stack_cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim) + (2*cell_dim)
 
-    # config_weight = tf.Variable(tf.truncated_normal([config_input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
-    # config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
-    # input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
-    input_out = tf.concat([input_concat_vec, top_config], axis=-1)
-    # input_out = tf.concat([input_parser, input_config], axis=-1)
+    config_weight = tf.Variable(tf.truncated_normal([config_input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
+    config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
+    input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
+    # input_out = tf.concat([input_concat_vec, top_config], axis=-1)
+    input_out = tf.concat([input_parser, input_config], axis=-1)
 
 with tf.name_scope('hidden_layer'):
-    input_out_dim = input_dim + config_input_dim
+    # input_out_dim = input_dim + config_input_dim
+    input_out_dim = 2*lstm_dim
     hidden_weight = tf.Variable(tf.truncated_normal([input_out_dim, output_dim], stddev=1.0/sqrt(output_dim)),
                                 name='weight_hidden')
     hidden_bias = tf.Variable(tf.truncated_normal([output_dim]), name='bias_hidden')

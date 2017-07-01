@@ -160,10 +160,8 @@ with tf.name_scope('calculate_loss'):
     for output_name in n_class:
         one_hot_labels = tf.one_hot(label_ph[output_name], n_class[output_name], on_value=1.0, off_value=0.0)
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped[output_name], labels=one_hot_labels))
-        if output_name == 'pos':
+        if output_name != 'action':
             ce_loss *= 0.25
-        if output_name == 'dep_label':
-            ce_loss *= 0.5
         loss += ce_loss
 
 with tf.name_scope('optimize'):
@@ -406,6 +404,7 @@ class ParserModel:
 
     def train(self):
         self.session.run(apply_grad)
+        self.session.run(reset_gradient)
 
     def predict(self, feasible_actions):
         predicted_outputs = self.session.run(predictions, feed_dict={output_mask: feasible_actions})
@@ -461,7 +460,7 @@ class ParserModel:
             action_ph: [n_action - 1]
         }
         init_action_list = [initial_buffer, init_buffer_out, init_stack, init_action,
-                            init_stack_state, init_stack_out, init_stack_out_state, init_action_state, reset_gradient]
+                            init_stack_state, init_stack_out, init_stack_out_state, init_action_state]
         self.session.run(init_action_list, feed_dict=feed_dict)
         self.session.run([calc_stack_lstm, assign_stack_state, calc_stack_out_lstm, assign_stack_out_state])
 

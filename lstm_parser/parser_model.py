@@ -130,7 +130,8 @@ with tf.name_scope('input_layer'):
     input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
     # input_out = tf.concat([input_concat_vec, top_config], axis=-1)
     input_out_dim = 2 * lstm_dim
-    input_out = tf.concat([input_parser, input_config], axis=-1) + \
+    input_out = tf.concat([input_parser, input_config], axis=-1)
+    dropped_input_out = tf.concat([input_parser, input_config], axis=-1) + \
                 tf.random_normal([1, input_out_dim], mean=0.0, stddev=noise_std)
 
 with tf.name_scope('hidden_layer'):
@@ -138,6 +139,7 @@ with tf.name_scope('hidden_layer'):
     hidden_weight = tf.Variable(tf.truncated_normal([input_out_dim, output_dim], stddev=1.0/sqrt(output_dim)),
                                 name='weight_hidden')
     hidden_bias = tf.Variable(tf.truncated_normal([output_dim]), name='bias_hidden')
+    dropped_hidden_out = tf.nn.relu(tf.matmul(dropped_input_out, hidden_weight) + hidden_bias)
     hidden_out = tf.nn.relu(tf.matmul(input_out, hidden_weight) + hidden_bias)
 
 with tf.name_scope('output_layer'):
@@ -146,7 +148,7 @@ with tf.name_scope('output_layer'):
     predictions = dict()
     dropped = dict()
 
-    dropped_hidden = tf.nn.dropout(hidden_out, dropout_prob)
+    dropped_hidden = tf.nn.dropout(dropped_hidden_out, dropout_prob)
     for output_name in n_class:
         output_weights[output_name] = tf.Variable(
             tf.truncated_normal([output_dim, n_class[output_name]], stddev=1.0/sqrt(n_class[output_name])),

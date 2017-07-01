@@ -5,7 +5,7 @@ from numpy import argmax
 from copy import deepcopy
 
 # parameters
-dropout_prob = 0.7
+dropout_prob = 0.8
 n_kept_model = 1
 
 n_lstm_stack = 2
@@ -15,12 +15,12 @@ k_bpos_candidate = 3
 # dimension
 lstm_dim = 100
 subword_lstm_dim = 64
-output_dim = 50
+output_dim = 30
 
 word_vocab_size = 100004
 subword_vocab_size = 100004
 word_emb_dim = 64
-param_emb_dim = 50
+param_emb_dim = 30
 candidate_emb_dim = 30
 
 stack_cell_dim = lstm_dim + lstm_dim + word_emb_dim
@@ -111,9 +111,9 @@ with tf.name_scope('input_layer'):
     input_concat_vec = tf.concat([stack_lstm_vec, stack_out_lstm_vec, buffer_lstm_vec, buffer_out_lstm_vec, action_lstm_vec], axis=-1)
     input_dim = 5 * lstm_dim
 
-    input_weight = tf.Variable(tf.truncated_normal([input_dim, 2*lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
-    input_bias = tf.Variable(tf.zeros([2*lstm_dim]), name='bias_input')
-    input_parser = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
+    # input_weight = tf.Variable(tf.truncated_normal([input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
+    # input_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_input')
+    # input_parser = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
 
     # top stack/buffer configuration
     top_stack_rel = tf.reshape(stack[-2:, :], [1, 2*stack_cell_dim])
@@ -123,13 +123,15 @@ with tf.name_scope('input_layer'):
     top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer, top_buffer_word], axis=-1)
     config_input_dim = (2*stack_cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim) + (2*cell_dim)
 
-    config_weight = tf.Variable(tf.truncated_normal([config_input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
-    config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
-    input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
-    input_out = tf.concat([input_parser, input_config], axis=-1)
+    # config_weight = tf.Variable(tf.truncated_normal([config_input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_config')
+    # config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
+    # input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
+    input_out = tf.concat([input_concat_vec, top_config], axis=-1)
+    # input_out = tf.concat([input_parser, input_config], axis=-1)
 
 with tf.name_scope('hidden_layer'):
-    hidden_weight = tf.Variable(tf.truncated_normal([3*lstm_dim, output_dim], stddev=1.0/sqrt(output_dim)),
+    input_out_dim = input_dim + config_input_dim
+    hidden_weight = tf.Variable(tf.truncated_normal([input_out_dim, output_dim], stddev=1.0/sqrt(output_dim)),
                                 name='weight_hidden')
     hidden_bias = tf.Variable(tf.truncated_normal([output_dim]), name='bias_hidden')
     hidden_out = tf.nn.relu(tf.matmul(input_out, hidden_weight) + hidden_bias)
@@ -157,8 +159,10 @@ with tf.name_scope('calculate_loss'):
     for output_name in n_class:
         one_hot_labels = tf.one_hot(label_ph[output_name], n_class[output_name], on_value=1.0, off_value=0.0)
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped[output_name], labels=one_hot_labels))
-        if output_name != 'action':
+        if output_name == 'pos':
             ce_loss *= 0.25
+        if output_name == 'dep_label':
+            ce_loss *= 0.5
         loss += ce_loss
 
 with tf.name_scope('optimize'):

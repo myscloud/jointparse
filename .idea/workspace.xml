@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f876e7c3-957b-4441-a97a-a2403f2b58e5" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lstm_parser/parser_model.py" afterPath="$PROJECT_DIR$/lstm_parser/parser_model.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lstm_parser/train.py" afterPath="$PROJECT_DIR$/lstm_parser/train.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -23,8 +25,8 @@
       <file leaf-file-name="options.config" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/options.config">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1173">
-              <caret line="69" column="53" lean-forward="false" selection-start-line="69" selection-start-column="53" selection-end-line="69" selection-end-column="53" />
+            <state relative-caret-position="419">
+              <caret line="54" column="18" lean-forward="false" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="18" />
               <folding />
             </state>
           </provider>
@@ -50,16 +52,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="parser4.log" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/log/zh/parser/model14/parser4.log">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="612">
-              <caret line="252" column="36" lean-forward="false" selection-start-line="252" selection-start-column="36" selection-end-line="252" selection-end-column="36" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="parser7.log" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/log/zh/parser/model13/parser7.log">
           <provider selected="true" editor-type-id="text-editor">
@@ -73,8 +65,8 @@
       <file leaf-file-name="train.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lstm_parser/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-153">
-              <caret line="19" column="68" lean-forward="false" selection-start-line="19" selection-start-column="68" selection-end-line="19" selection-end-column="68" />
+            <state relative-caret-position="629">
+              <caret line="45" column="33" lean-forward="false" selection-start-line="45" selection-start-column="33" selection-end-line="45" selection-end-column="33" />
               <folding />
             </state>
           </provider>
@@ -83,8 +75,8 @@
       <file leaf-file-name="parser_model.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/lstm_parser/parser_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="561">
-              <caret line="146" column="24" lean-forward="true" selection-start-line="146" selection-start-column="24" selection-end-line="146" selection-end-column="24" />
+            <state relative-caret-position="153">
+              <caret line="116" column="0" lean-forward="true" selection-start-line="116" selection-start-column="0" selection-end-line="116" selection-end-column="0" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -189,8 +181,8 @@
         <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/lstm_parser/predict.py" />
         <option value="$PROJECT_DIR$/options.config" />
-        <option value="$PROJECT_DIR$/lstm_parser/train.py" />
         <option value="$PROJECT_DIR$/log/zh/parser/model14/test.eval" />
+        <option value="$PROJECT_DIR$/lstm_parser/train.py" />
         <option value="$PROJECT_DIR$/lstm_parser/parser_model.py" />
       </list>
     </option>
@@ -234,6 +226,8 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -370,8 +364,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
-      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -842,22 +834,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/options.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1173">
-          <caret line="69" column="53" lean-forward="false" selection-start-line="69" selection-start-column="53" selection-end-line="69" selection-end-column="53" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lstm_parser/data_prep.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3128">
-          <caret line="185" column="0" lean-forward="false" selection-start-line="185" selection-start-column="0" selection-end-line="185" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/word_seg/segment_model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
@@ -885,7 +861,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="215">
           <caret line="19818" column="0" lean-forward="false" selection-start-line="19818" selection-start-column="0" selection-end-line="19818" selection-end-column="426" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -893,7 +868,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
           <caret line="0" column="426" lean-forward="true" selection-start-line="0" selection-start-column="426" selection-end-line="0" selection-end-column="426" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -901,30 +875,44 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
           <caret line="0" column="424" lean-forward="false" selection-start-line="0" selection-start-column="424" selection-end-line="0" selection-end-column="424" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/log/zh/parser/model14/parser4.log">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="612">
+        <state relative-caret-position="1071">
           <caret line="252" column="36" lean-forward="false" selection-start-line="252" selection-start-column="36" selection-end-line="252" selection-end-column="36" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lstm_parser/data_prep.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3128">
+          <caret line="185" column="0" lean-forward="false" selection-start-line="185" selection-start-column="0" selection-end-line="185" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/options.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="419">
+          <caret line="54" column="18" lean-forward="false" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="18" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lstm_parser/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-153">
-          <caret line="19" column="68" lean-forward="false" selection-start-line="19" selection-start-column="68" selection-end-line="19" selection-end-column="68" />
+        <state relative-caret-position="629">
+          <caret line="45" column="33" lean-forward="false" selection-start-line="45" selection-start-column="33" selection-end-line="45" selection-end-column="33" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lstm_parser/parser_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="561">
-          <caret line="146" column="24" lean-forward="true" selection-start-line="146" selection-start-column="24" selection-end-line="146" selection-end-column="24" />
+        <state relative-caret-position="153">
+          <caret line="116" column="0" lean-forward="true" selection-start-line="116" selection-start-column="0" selection-end-line="116" selection-end-column="0" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>

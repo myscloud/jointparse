@@ -110,11 +110,13 @@ def nn_run_lstm_input(input_vec, dim, scope_name, init_state=None):
 # run model
 with tf.name_scope('input_layer'):
     # whole parser configuration
-    input_concat_vec = tf.concat([stack_lstm_vec, stack_out_lstm_vec, buffer_lstm_vec, buffer_out_lstm_vec, action_lstm_vec], axis=-1)
-    input_dim = 5 * lstm_dim
+    # input_concat_vec = tf.concat([stack_lstm_vec, stack_out_lstm_vec, buffer_lstm_vec, buffer_out_lstm_vec, action_lstm_vec], axis=-1)
+    input_concat_vec = tf.concat(
+        [stack_lstm_vec, buffer_out_lstm_vec, action_lstm_vec], axis=-1)
+    input_dim = 3 * lstm_dim
 
-    input_weight = tf.Variable(tf.truncated_normal([input_dim, lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
-    input_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_input')
+    input_weight = tf.Variable(tf.truncated_normal([input_dim, 2*lstm_dim], stddev=1.0/sqrt(lstm_dim)), name='weight_input')
+    input_bias = tf.Variable(tf.zeros([2*lstm_dim]), name='bias_input')
     input_parser = tf.nn.relu(tf.matmul(input_concat_vec, input_weight) + input_bias)
 
     # top stack/buffer configuration
@@ -129,7 +131,7 @@ with tf.name_scope('input_layer'):
     config_bias = tf.Variable(tf.zeros([lstm_dim]), name='bias_config')
     input_config = tf.nn.relu(tf.matmul(top_config, config_weight) + config_bias)
     # input_out = tf.concat([input_concat_vec, top_config], axis=-1)
-    input_out_dim = 2 * lstm_dim
+    input_out_dim = 3 * lstm_dim
     input_out = tf.concat([input_parser, input_config], axis=-1)
     dropped_input_out = tf.concat([input_parser, input_config], axis=-1) + \
                 tf.random_normal([1, input_out_dim], mean=0.0, stddev=noise_std)
@@ -148,7 +150,8 @@ with tf.name_scope('output_layer'):
     predictions = dict()
     dropped = dict()
 
-    dropped_hidden = tf.nn.dropout(dropped_hidden_out, dropout_prob)
+    # dropped_hidden = tf.nn.dropout(dropped_hidden_out, dropout_prob)
+    dropped_hidden = tf.nn.dropout(hidden_out, dropout_prob)
     for output_name in n_class:
         output_weights[output_name] = tf.Variable(
             tf.truncated_normal([output_dim, n_class[output_name]], stddev=1.0/sqrt(n_class[output_name])),
@@ -170,7 +173,7 @@ with tf.name_scope('calculate_loss'):
         loss += ce_loss
 
 with tf.name_scope('optimize'):
-    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.95)
+    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.99)
     compute_grad = optimizer.compute_gradients(loss, var_list=tf.trainable_variables())
     computable_grad = [grad_info for grad_info in compute_grad if grad_info[0] is not None]
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]

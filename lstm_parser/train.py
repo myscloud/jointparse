@@ -16,8 +16,8 @@ def train(options):
     }
     reverse_act_map = network_params.params['reverse_action_map']
 
-    training_data_original = prepare_parser_data(options, network_params, 'train')
-    eval_data = prepare_parser_data(options, network_params, 'eval')
+    training_data_original = prepare_parser_data(options, network_params, 'train')[0:500]
+    eval_data = prepare_parser_data(options, network_params, 'eval')[0:100]
     training_data = training_data_original.copy()
 
     model = ParserModel(network_params.params, embeddings=embeddings)

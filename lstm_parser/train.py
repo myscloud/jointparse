@@ -39,7 +39,8 @@ def train(options):
                 all_parser_loss += train_loss
                 model.take_action(gold_action)
 
-            model.train()
+            if (sent_idx + 1) % options['parsing_batch_size'] == 0 or (sent_idx + 1) == len(training_data):
+                model.train()
             parser_loss = all_parser_loss / len(sentence['gold_actions'])
             all_epoch_loss += parser_loss
             if sent_idx % 50 == 0:

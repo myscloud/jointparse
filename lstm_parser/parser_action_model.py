@@ -31,7 +31,7 @@ action_node_dim = stack_out_dim + param_emb_dim
 n_pos = 16
 n_bpos = 61
 # n_class = 106
-n_class = {'action': 4, 'pos': 16, 'dep_label': 39}
+n_class = {'action': 4}
 # n_class = {'action': 106}
 n_action = 107
 action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
@@ -72,9 +72,7 @@ relation_action_ph = tf.placeholder(tf.int32, [None], name='placeholder_rel_acti
 action_ph = tf.placeholder(tf.int32, None, name='placeholder_action')
 output_mask = tf.placeholder(tf.float32, [None], name='placeholder_output_mask')
 label_ph = {
-    'action': tf.placeholder(tf.int32, None, name='placeholder_action_label'),
-    'pos': tf.placeholder(tf.int32, None, name='placeholder_pos_label'),
-    'dep_label': tf.placeholder(tf.int32, None, name='placeholder_dep_label')
+    'action': tf.placeholder(tf.int32, None, name='placeholder_action_label')
 }
 
 word_emb = tf.Variable(tf.random_uniform([word_vocab_size, word_emb_dim], minval=-0.1, maxval=0.1),
@@ -155,12 +153,10 @@ with tf.name_scope('calculate_loss'):
     for output_name in n_class:
         one_hot_labels = tf.one_hot(label_ph[output_name], n_class[output_name], on_value=1.0, off_value=0.0)
         ce_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=dropped[output_name], labels=one_hot_labels))
-        if output_name == 'action':
-            ce_loss *= 2
         loss += ce_loss
 
 with tf.name_scope('optimize'):
-    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.99)
+    optimizer = tf.train.AdamOptimizer(name='parser_opt', beta1=0.95)
     compute_grad = optimizer.compute_gradients(loss, var_list=tf.trainable_variables())
     computable_grad = [grad_info for grad_info in compute_grad if grad_info[0] is not None]
     gradients_list = [tf.Variable(tf.zeros(tf.shape(grad[1])), trainable=False) for grad in computable_grad]
@@ -193,7 +189,7 @@ with tf.name_scope('action_config'):
 with tf.name_scope('word_node'):
     mapped_word_lm = tf.nn.embedding_lookup(word_lm_emb, word_ph)
     mapped_subwords_s = tf.nn.embedding_lookup(subword_emb, subword_list_ph)
-    _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'lstm_subword')
+    _, subword_lstm, _ = nn_run_lstm_input(tf.expand_dims(mapped_subwords_s, 0), subword_lstm_dim, 'act_lstm_subword')
     mapped_pos = tf.reshape(tf.nn.embedding_lookup(pos_emb, pos_ph), [1, param_emb_dim])
     s_mapped_action = tf.reshape(tf.nn.embedding_lookup(action_emb, relation_action_ph), [1, param_emb_dim])
 
@@ -233,7 +229,7 @@ with tf.name_scope('initial_buffer'):
     final_buffer_list = tf.concat([buffer_list, mapped_subwords_b], axis=-1)
     reshaped_buffer_list = tf.expand_dims(final_buffer_list, 0)
 
-    buffer_lstm_outputs, _, _ = nn_run_lstm_input(reshaped_buffer_list, lstm_dim, 'buffer_lstm')
+    buffer_lstm_outputs, _, _ = nn_run_lstm_input(reshaped_buffer_list, lstm_dim, 'act_buffer_lstm')
     reshaped_buffer = tf.reshape(buffer_lstm_outputs, [tf.shape(buffer_lstm_outputs)[1], lstm_dim])
     initial_buffer = tf.assign(buffer, reshaped_buffer, validate_shape=False)
 
@@ -247,7 +243,7 @@ with tf.name_scope('buffer_word'):
         tf.reshape(buffer_word_state[-1, i, 0, :], [1, lstm_dim]),
         tf.reshape(buffer_word_state[-1, i, 1, :], [1, lstm_dim])) for i in range(n_lstm_stack)])
     reshaped_buffer_word = tf.reshape(buffer_word[-1, :], [1, 1, lstm_dim])
-    _, b_word_lstm_out, b_word_new_state = nn_run_lstm_input(reshaped_buffer_word, lstm_dim, 'buffer_word_lstm',
+    _, b_word_lstm_out, b_word_new_state = nn_run_lstm_input(reshaped_buffer_word, lstm_dim, 'act_buffer_word_lstm',
                                                               init_state=buffer_word_last_state)
 
     init_buffer_word = tf.assign(buffer_word, b_word_lstm_out, validate_shape=False)
@@ -323,7 +319,7 @@ with tf.name_scope('calculate_lstm_output'):
         tf.reshape(stack_state[-1, i, 0, :], [1, lstm_dim]), tf.reshape(stack_state[-1, i, 1, :], [1, lstm_dim]))
                         for i in range(n_lstm_stack)])
     reshaped_stack = tf.reshape(stack[-1, :], [1, 1, cell_dim])
-    _, stack_lstm_out, new_stack_state = nn_run_lstm_input(reshaped_stack, lstm_dim, 'stack_lstm', init_state=stack_last_state)
+    _, stack_lstm_out, new_stack_state = nn_run_lstm_input(reshaped_stack, lstm_dim, 'act_stack_lstm', init_state=stack_last_state)
     calc_stack_lstm = tf.assign(stack_lstm_vec, stack_lstm_out)
     assign_stack_state = tf.assign(stack_state, tf.concat([stack_state, new_stack_state], axis=0), validate_shape=False)
 
@@ -331,7 +327,7 @@ with tf.name_scope('calculate_lstm_output'):
         tf.reshape(actions_state[0, i, 0, :], [1, lstm_dim]), tf.reshape(actions_state[0, i, 1, :], [1, lstm_dim]))
                          for i in range(n_lstm_stack)])
     reshaped_actions = tf.reshape(actions, [1, 1, lstm_dim])
-    _, action_out, new_action_state = nn_run_lstm_input(reshaped_actions, lstm_dim, 'action_lstm', init_state=action_last_state)
+    _, action_out, new_action_state = nn_run_lstm_input(reshaped_actions, lstm_dim, 'act_action_lstm', init_state=action_last_state)
     calc_action_lstm = tf.assign(action_lstm_vec, action_out)
     assign_action_state = tf.assign(actions_state, new_action_state)
 
@@ -367,13 +363,9 @@ class ParserModel:
     def calc_loss(self, action_label, feasible_actions):
         (action, params) = self.params['reverse_action_map'][action_label]
         action_index = action_name_list.index(action)
-        pos_label = self.params['pos_map'][params] if action_index >= 2 else (n_class['pos'] - 1)
-        dep_label = self.params['dep_label_map'][params] if action_index < 2 else (n_class['dep_label'] - 1)
 
         feed_dict = {
             label_ph['action']: [action_index],
-            label_ph['pos']: [pos_label],
-            label_ph['dep_label']: [dep_label],
             output_mask: feasible_actions
         }
 
@@ -388,13 +380,7 @@ class ParserModel:
         predicted_outputs = self.session.run(predictions, feed_dict={output_mask: feasible_actions})
         max_action = argmax(predicted_outputs['action'])
         action = action_name_list[max_action]
-        if max_action >= 2:
-            params = self.params['reverse_pos_map'][argmax(predicted_outputs['pos'][0][:-1])]
-        else:
-            params = self.params['reverse_dep_label_map'][argmax(predicted_outputs['dep_label'][0][:-1])]
-        action_index = self.params['action_map'][(action, params)]
-        # return max_action
-        return action_index
+        return action
 
     def save_model(self, model_path, global_step):
         saver.save(self.session, model_path, global_step=global_step)

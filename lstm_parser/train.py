@@ -43,9 +43,11 @@ def train(options):
                                                   sentence['idx_buffer_packet'])
 
             all_parser_loss = {'action': 0, 'param': 0}
-            for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
+            for gold_action, pseudo_label, feasible_action in \
+                    zip(sentence['gold_actions'], sentence['pseudo_label'], sentence['feasible_actions']):
+                train_loss['action'] = model['action'].calc_loss(gold_action, pseudo_label, feasible_action)
+                train_loss['param'] = model['param'].calc_loss(gold_action, feasible_action)
                 for model_name in model_list:
-                    train_loss[model_name] = model[model_name].calc_loss(gold_action, feasible_action)
                     all_parser_loss[model_name] += train_loss[model_name]
                     model[model_name].take_action(gold_action)
 

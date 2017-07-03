@@ -18,6 +18,7 @@ def prepare_parser_data(options, params, data_types):
 
     # for each sentence, prepare data for parser
     parser_data = list()
+    idx = 0
     for gold_data, subword, word_can, bpos_can in zip(exp_data.data,
                                                       exp_data.subword, mapped_word_candidates, bpos_candidates):
         sentence_subword = list()
@@ -29,7 +30,7 @@ def prepare_parser_data(options, params, data_types):
             word_info['bpos_candidates'] = bpos_can[subword_idx]
             sentence_subword.append(word_info)
         # generate gold action list
-        action_list, feasible_action_list = get_gold_action_list(sentence_subword, gold_data, subword)
+        action_list, feasible_action_list, action_idx = get_gold_action_list(sentence_subword, gold_data, subword)
         feasible_action_index = [get_feasible_action_index(actions, params.params['reverse_action_map'])
                                  for actions in feasible_action_list]
 
@@ -37,6 +38,7 @@ def prepare_parser_data(options, params, data_types):
         sentence_info['sentence_data'] = sentence_subword
         sentence_info['gold_data'] = gold_data
         sentence_info['gold_actions'] = params.map_list_with_params(action_list, 'action_map')
+        sentence_info['pseudo_label'] = get_pseudo_label(action_idx)
         sentence_info['feasible_actions'] = feasible_action_index
         sentence_info['buffer_packet'] = get_buffer_packet(gold_data, subword)
 
@@ -49,6 +51,17 @@ def prepare_parser_data(options, params, data_types):
         parser_data.append(sentence_info)
 
     return parser_data
+
+
+def get_pseudo_label(action_idx):
+    new_action = action_idx + [4, 4]
+    pseudo_labels = list()
+
+    for i in range(0, len(action_idx)):
+        new_label = (5 * new_action[i+1]) + new_action[i+2]
+        pseudo_labels.append(new_label)
+
+    return pseudo_labels
 
 
 def get_buffer_packet(sent_data, subword_data):
@@ -147,6 +160,9 @@ def read_bpos_candidates(bpos_candidates_path):
     return candidates
 
 
+action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
+
+
 def get_gold_action_list(sentence_data, gold_data, subword_data):
     parser = Parser(sentence_data)
 
@@ -156,6 +172,7 @@ def get_gold_action_list(sentence_data, gold_data, subword_data):
         max_dependent_idx[head_idx] = word_idx + 1
 
     action_list = list()
+    action_idx_list = list()
     feasible_action_list = list()
 
     while not parser.is_parsing_terminated():
@@ -180,16 +197,14 @@ def get_gold_action_list(sentence_data, gold_data, subword_data):
 
         action_tuple = (action, params)
         action_list.append(action_tuple)
+        action_idx_list.append(action_name_list.index(action))
 
         feasible_actions = parser.get_feasible_actions()
         feasible_action_list.append(feasible_actions)
 
         parser.take_action(action_tuple)
 
-    return action_list, feasible_action_list
-
-
-action_name_list = ['LEFT-ARC', 'RIGHT-ARC', 'SHIFT', 'APPEND']
+    return action_list, feasible_action_list, action_idx_list
 
 
 def get_word_label(gold_subword_data):

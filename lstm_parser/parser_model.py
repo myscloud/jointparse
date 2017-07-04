@@ -115,7 +115,7 @@ with tf.name_scope('input_layer'):
     # top stack/buffer configuration
     top_stack_rel = tf.reshape(stack[-2:, :], [1, 2*cell_dim])
     top_stack_word = tf.reshape(stack_out[-2:, :], [1, 2*stack_out_dim])
-    top_buffer = tf.reshape(buffer_out[-2:, :], [1, 2*buffer_out_dim])
+    top_buffer = tf.reshape(buffer_out[0:2, :], [1, 2*buffer_out_dim])
     top_buffer_word = tf.reshape(buffer_word_out[-2:, :], [1, 2*cell_dim])
     top_config = tf.concat([top_stack_rel, top_stack_word, top_buffer, top_buffer_word], axis=-1)
     config_input_dim = (2*cell_dim) + (2*stack_out_dim) + (2*buffer_out_dim) + (2*cell_dim)
@@ -272,8 +272,8 @@ with tf.name_scope('add_action'):
     add_action = tf.assign(actions, action_vec)
 
 with tf.name_scope('buffer_remove'):
-    remove_buffer = tf.assign(buffer, buffer[:-1, :], validate_shape=False)
-    remove_buffer_out = tf.assign(buffer_out, buffer_out[:-1, :], validate_shape=False)
+    remove_buffer = tf.assign(buffer, buffer[1:, :], validate_shape=False)
+    remove_buffer_out = tf.assign(buffer_out, buffer_out[1:, :], validate_shape=False)
 
 with tf.name_scope('stack_shift'):
     shift_new_stack = tf.concat([stack, stack_vec], axis=0)
@@ -316,7 +316,7 @@ with tf.name_scope('stack_right_arc'):
     add_right_arc = tf.assign(stack, right_arc_new_stack, validate_shape=False)
 
 with tf.name_scope('calculate_lstm_output'):
-    calc_buffer_lstm = tf.assign(buffer_lstm_vec, tf.expand_dims(buffer[-1, :], 0))
+    calc_buffer_lstm = tf.assign(buffer_lstm_vec, tf.expand_dims(buffer[0, :], 0))
     calc_buffer_out_lstm = tf.assign(buffer_out_lstm_vec, tf.expand_dims(buffer_word[-1, :], 0))
 
     stack_last_state = tuple([rnn.LSTMStateTuple(
@@ -426,11 +426,9 @@ class ParserModel:
         # other parameters
         feed_dict = {
             # for buffer
-            subword_ph: [3, 3] + list(reversed(subwords)),
-            word_candidates_ph: [([3] * k_word_candidate)] + [([3] * k_word_candidate)] + list(
-                reversed(word_candidates)),
-            bpos_ph: [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)] + list(
-                reversed(bpos_candidates)),
+            subword_ph: subwords + [3, 3],
+            word_candidates_ph: word_candidates + [([3] * k_word_candidate)] + [([3] * k_word_candidate)],
+            bpos_ph: bpos_candidates + [([n_bpos - 1] * k_bpos_candidate)] + [([n_bpos - 1] * k_bpos_candidate)],
             # for stack
             word_ph: [3],
             subword_list_ph: [3],

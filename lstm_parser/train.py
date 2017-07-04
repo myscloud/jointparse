@@ -1,7 +1,5 @@
 from lstm_parser.data_prep import prepare_parser_data
 from lstm_parser.parser_model import ParserModel
-from lstm_parser.parser_action_model import ParserModel as ActionModel
-from lstm_parser.parser_param_model import ParserModel as ParamModel
 from lstm_parser.evaluate import get_epoch_evaluation
 from lstm_parser.predict import predict_and_get_evaluation
 from tools.embedding_reader import NetworkParams
@@ -22,50 +20,37 @@ def train(options):
     eval_data = prepare_parser_data(options, network_params, 'eval')
     training_data = training_data_original.copy()
 
-    model_list = ['action', 'param']
-    model = dict()
-    model['action'] = ActionModel(network_params.params, embeddings=embeddings)
-    model['param'] = ParamModel(network_params.params, embeddings=embeddings)
+    model = ParserModel(network_params.params, embeddings=embeddings)
     epoch_count = 0
     max_uas_score = 0
-    train_loss = dict()
     uas_list = list()
 
     while True:
         print('Epoch', epoch_count)
         shuffle(training_data)
-        all_epoch_loss = {key: 0 for key in model_list}
+        all_epoch_loss = 0
         for sent_idx, sentence in enumerate(training_data):
-            for model_name in model_list:
-                model[model_name].initial_parser_model(sentence['idx_subword'], sentence['idx_word_can'],
-                                                  sentence['idx_bpos_can'],
-                                                  sentence['only_subword'], sentence['buffer_packet'],
-                                                  sentence['idx_buffer_packet'])
+            model.initial_parser_model(sentence['idx_subword'], sentence['idx_word_can'], sentence['idx_bpos_can'],
+                                       sentence['only_subword'], sentence['buffer_packet'], sentence['idx_buffer_packet'])
 
-            all_parser_loss = {'action': 0, 'param': 0}
-            for gold_action, pseudo_label, feasible_action in \
-                    zip(sentence['gold_actions'], sentence['pseudo_label'], sentence['feasible_actions']):
-                train_loss['action'] = model['action'].calc_loss(gold_action, pseudo_label, feasible_action)
-                train_loss['param'] = model['param'].calc_loss(gold_action, feasible_action)
-                for model_name in model_list:
-                    all_parser_loss[model_name] += train_loss[model_name]
-                    model[model_name].take_action(gold_action)
+            all_parser_loss = 0
+            for gold_action, feasible_action in zip(sentence['gold_actions'], sentence['feasible_actions']):
+                train_loss = model.calc_loss(gold_action, feasible_action)
+                all_parser_loss += train_loss
+                model.take_action(gold_action)
 
-            for model_name in model_list:
-                model[model_name].train()
+            model.train()
+            parser_loss = all_parser_loss / len(sentence['gold_actions'])
+            all_epoch_loss += parser_loss
+            if sent_idx % 50 == 0:
+                print('Parser ', sent_idx, ', loss = ', parser_loss)
 
-                parser_loss = all_parser_loss[model_name] / len(sentence['gold_actions'])
-                all_epoch_loss[model_name] += parser_loss
-                if sent_idx % 50 == 0:
-                    print('Parser ', sent_idx, ',',  model_name, 'loss = ', parser_loss)
-
-        for model_name in model_list:
-            epoch_loss = all_epoch_loss[model_name] / len(training_data)
-            print('** Epoch', epoch_count, ',',  model_name, 'loss = ', epoch_loss)
+        epoch_loss = all_epoch_loss / len(training_data)
+        print('** Epoch', epoch_count, ', loss = ', epoch_loss)
 
         evaluation_list = list()
         for eval_sentence in eval_data:
-            _, eval_dict = predict_and_get_evaluation(eval_sentence, model, network_params.params['action_map'], reverse_act_map)
+            _, eval_dict = predict_and_get_evaluation(eval_sentence, model, reverse_act_map)
             evaluation_list.append(eval_dict)
 
         epoch_eval = get_epoch_evaluation(evaluation_list)
@@ -75,8 +60,7 @@ def train(options):
         print(epoch_eval)
 
         if uas_score > max_uas_score:
-            for model_name in model_list:
-                model[model_name].save_model(options[model_name + '_model_save_path'], epoch_count)
+            model.save_model(options['parser_model_save_path'], epoch_count)
             max_uas_score = max(max_uas_score, uas_score)
 
         uas_list.append(uas_score)
@@ -86,4 +70,3 @@ def train(options):
             break
 
         epoch_count += 1
-
